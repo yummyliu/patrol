@@ -27,7 +27,7 @@ const (
 	host     = "localhost"
 	port     = 5432
 	user     = "dba"
-	password = "ttdbattdba"
+	password = "dbapasswd"
 	dbname   = "postgres"
 
 	// cpu usage alert
