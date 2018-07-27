@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------
  *
- * worker_spi.c
+ * commander.c
  *		Sample background worker code that demonstrates various coding
  *		patterns: establishing a database connection; starting and committing
  *		transactions; using GUC variables, and heeding SIGHUP to reread
@@ -16,7 +16,7 @@
  * Copyright (c) 2013-2017, PostgreSQL Global Development Group
  *
  * IDENTIFICATION
- *		src/test/modules/worker_spi/worker_spi.c
+ *		src/test/modules/commander/commander.c
  *
  * -------------------------------------------------------------------------
  */
@@ -43,18 +43,18 @@
 
 PG_MODULE_MAGIC;
 
-PG_FUNCTION_INFO_V1(worker_spi_launch);
+PG_FUNCTION_INFO_V1(commander_launch);
 
 void		_PG_init(void);
-void		worker_spi_main(Datum) pg_attribute_noreturn();
+void		commander_main(Datum) pg_attribute_noreturn();
 
 /* flags set by signal handlers */
 static volatile sig_atomic_t got_sighup = false;
 static volatile sig_atomic_t got_sigterm = false;
 
 /* GUC variables */
-static int	worker_spi_naptime = 10;
-static int	worker_spi_total_workers = 2;
+static int	commander_naptime = 10;
+static int	commander_total_workers = 2;
 
 
 typedef struct worktable
@@ -69,7 +69,7 @@ typedef struct worktable
  *		it up.
  */
 static void
-worker_spi_sigterm(SIGNAL_ARGS)
+commander_sigterm(SIGNAL_ARGS)
 {
 	int			save_errno = errno;
 
@@ -85,7 +85,7 @@ worker_spi_sigterm(SIGNAL_ARGS)
  *		our latch to wake it up.
  */
 static void
-worker_spi_sighup(SIGNAL_ARGS)
+commander_sighup(SIGNAL_ARGS)
 {
 	int			save_errno = errno;
 
@@ -100,7 +100,7 @@ worker_spi_sighup(SIGNAL_ARGS)
  * already exist.
  */
 static void
-initialize_worker_spi(worktable *table)
+initialize_commander(worktable *table)
 {
 	int			ret;
 	int			ntup;
@@ -159,7 +159,7 @@ initialize_worker_spi(worktable *table)
 }
 
 void
-worker_spi_main(Datum main_arg)
+commander_main(Datum main_arg)
 {
 	int			index = DatumGetInt32(main_arg);
 	worktable  *table;
@@ -172,8 +172,8 @@ worker_spi_main(Datum main_arg)
 	table->name = pstrdup("counted");
 
 	/* Establish signal handlers before unblocking signals. */
-	pqsignal(SIGHUP, worker_spi_sighup);
-	pqsignal(SIGTERM, worker_spi_sigterm);
+	pqsignal(SIGHUP, commander_sighup);
+	pqsignal(SIGTERM, commander_sigterm);
 
 	/* We're now ready to receive signals */
 	BackgroundWorkerUnblockSignals();
@@ -183,11 +183,11 @@ worker_spi_main(Datum main_arg)
 
 	elog(LOG, "%s initialized with %s.%s",
 		 MyBgworkerEntry->bgw_name, table->schema, table->name);
-	initialize_worker_spi(table);
+	initialize_commander(table);
 
 	/*
 	 * Quote identifiers passed to us.  Note that this must be done after
-	 * initialize_worker_spi, because that routine assumes the names are not
+	 * initialize_commander, because that routine assumes the names are not
 	 * quoted.
 	 *
 	 * Note some memory might be leaked here.
@@ -227,7 +227,7 @@ worker_spi_main(Datum main_arg)
 		 */
 		rc = WaitLatch(MyLatch,
 					   WL_LATCH_SET | WL_TIMEOUT | WL_POSTMASTER_DEATH,
-					   worker_spi_naptime * 1000L,
+					   commander_naptime * 1000L,
 					   PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);
 
@@ -315,10 +315,10 @@ _PG_init(void)
 	unsigned int i;
 
 	/* get the configuration */
-	DefineCustomIntVariable("worker_spi.naptime",
+	DefineCustomIntVariable("commander.naptime",
 							"Duration between each check (in seconds).",
 							NULL,
-							&worker_spi_naptime,
+							&commander_naptime,
 							10,
 							1,
 							INT_MAX,
@@ -331,10 +331,10 @@ _PG_init(void)
 	if (!process_shared_preload_libraries_in_progress)
 		return;
 
-	DefineCustomIntVariable("worker_spi.total_workers",
+	DefineCustomIntVariable("commander.total_workers",
 							"Number of workers.",
 							NULL,
-							&worker_spi_total_workers,
+							&commander_total_workers,
 							2,
 							1,
 							100,
@@ -350,14 +350,14 @@ _PG_init(void)
 		BGWORKER_BACKEND_DATABASE_CONNECTION;
 	worker.bgw_start_time = BgWorkerStart_RecoveryFinished;
 	worker.bgw_restart_time = BGW_NEVER_RESTART;
-	sprintf(worker.bgw_library_name, "worker_spi");
-	sprintf(worker.bgw_function_name, "worker_spi_main");
+	sprintf(worker.bgw_library_name, "commander");
+	sprintf(worker.bgw_function_name, "commander_main");
 	worker.bgw_notify_pid = 0;
 
 	/*
 	 * Now fill in worker-specific data, and do the actual registrations.
 	 */
-	for (i = 1; i <= worker_spi_total_workers; i++)
+	for (i = 1; i <= commander_total_workers; i++)
 	{
 		snprintf(worker.bgw_name, BGW_MAXLEN, "worker %d", i);
 		worker.bgw_main_arg = Int32GetDatum(i);
@@ -370,7 +370,7 @@ _PG_init(void)
  * Dynamically launch an SPI worker.
  */
 Datum
-worker_spi_launch(PG_FUNCTION_ARGS)
+commander_launch(PG_FUNCTION_ARGS)
 {
 	int32		i = PG_GETARG_INT32(0);
 	BackgroundWorker worker;
@@ -383,8 +383,8 @@ worker_spi_launch(PG_FUNCTION_ARGS)
 		BGWORKER_BACKEND_DATABASE_CONNECTION;
 	worker.bgw_start_time = BgWorkerStart_RecoveryFinished;
 	worker.bgw_restart_time = BGW_NEVER_RESTART;
-	sprintf(worker.bgw_library_name, "worker_spi");
-	sprintf(worker.bgw_function_name, "worker_spi_main");
+	sprintf(worker.bgw_library_name, "commander");
+	sprintf(worker.bgw_function_name, "commander_main");
 	snprintf(worker.bgw_name, BGW_MAXLEN, "worker %d", i);
 	worker.bgw_main_arg = Int32GetDatum(i);
 	/* set bgw_notify_pid so that we can use WaitForBackgroundWorkerStartup */

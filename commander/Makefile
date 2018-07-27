@@ -1,17 +1,17 @@
 # src/test/modules/worker_spi/Makefile
 
-MODULES = worker_spi
+MODULES = commander
 
-EXTENSION = worker_spi
-DATA = worker_spi--1.0.sql
-PGFILEDESC = "worker_spi - background worker example"
+EXTENSION = commander
+DATA = commander--1.0.sql
+PGFILEDESC = "commander - background worker for patrol"
 
 ifdef USE_PGXS
 PG_CONFIG = pg_config
 PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 else
-subdir = src/test/modules/worker_spi
+subdir = src/test/modules/commander
 top_builddir = ../../../..
 include $(top_builddir)/src/Makefile.global
 include $(top_srcdir)/contrib/contrib-global.mk
