@@ -1,24 +1,19 @@
-/* -------------------------------------------------------------------------
- *
- * commander.c
- *		Sample background worker code that demonstrates various coding
- *		patterns: establishing a database connection; starting and committing
- *		transactions; using GUC variables, and heeding SIGHUP to reread
- *		the configuration file; reporting to pg_stat_activity; using the
- *		process latch to sleep and exit in case of postmaster death.
- *
+/* =============================================================================
+#     FileName: commander.c
+#         Desc: commander bgw for patrol
+#       Author: LiuYangming
+#        Email: sdwhlym@126.com
+#     HomePage: http://yummyliu.github.io
+#      Version: 0.0.1
+#   LastChange: 2018-07-27 14:22:58
+#      History:
+============================================================================= */
+/*
  * This code connects to a database, creates a schema and table, and summarizes
  * the numbers contained therein.  To see it working, insert an initial value
  * with "total" type and some initial value; then insert some other rows with
  * "delta" type.  Delta rows will be deleted by this worker and their values
  * aggregated into the total.
- *
- * Copyright (c) 2013-2017, PostgreSQL Global Development Group
- *
- * IDENTIFICATION
- *		src/test/modules/commander/commander.c
- *
- * -------------------------------------------------------------------------
  */
 #include "postgres.h"
 
