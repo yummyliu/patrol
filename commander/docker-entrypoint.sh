@@ -41,16 +41,20 @@ if [ -z "$(ls -A "$PGDATA")" ]; then
     cd /commander
     make
     make install
+    mkdir -p /run/postgresql
+    chown -R postgres:postgres /run
 
+    echo '---'
     extensionSql="create extension commander ;"
-    echo $userSql | gosu postgres postgres --single -jE
-    echo
+    echo $extensionSql | gosu postgres postgres --single -jE
+    echo '---'
 
 
     # internal start of server in order to allow set-up using psql-client
     # does not listen on TCP/IP and waits until start finishes
     gosu postgres pg_ctl -D "$PGDATA" \
         -o "-c listen_addresses=''" \
+        -P 5433 \
         -w start
 
     echo

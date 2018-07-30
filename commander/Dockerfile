@@ -5,7 +5,7 @@ ADD . /commander
 RUN echo '@edge http://nl.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories \ 
     && apk add --upgrade --no-cache apk-tools@edge && \
     apk update && \
-    apk add curl make "libpq" "postgresql-client" "postgresql" "postgresql-contrib" && \
+    apk add curl make gcc "libc-dev" "libpq" "postgresql-client" "postgresql" "postgresql-contrib" "postgresql-dev" && \
     mkdir /docker-entrypoint-initdb.d && \
     curl -o /usr/local/bin/gosu -sSL "https://github.com/tianon/gosu/releases/download/1.2/gosu-amd64" && \
     chmod +x /usr/local/bin/gosu && \
