@@ -21,20 +21,6 @@
 
 commander是一个PostgreSQL的background worker，收集信息，发送命令，比如：
 
-### Infos
-
-#### 巡检对象的元信息
-
-db_info
-rel_info
-func_info
-
-#### 巡检对象的上报快照
-
-db_superversion
-rel_superversion
-func_superversion
-
 #### 操作函数
 
 1. add_patrol udf
@@ -51,8 +37,22 @@ func_superversion
 # roadmap
 
 1. commander启动，创建元数据表
-2. 实现操作函数(操作函数中，向patrol服务请求相应http接口实现)
-3. 完成patrol的相应连接模块代码
+
+``` sql
+
+db_info
+rel_info
+func_info
+
+
+db_superversion
+rel_superversion
+func_superversion
+
+```
+
+2. 设计patrol的http接口，从而实现commander中的操作函数(操作函数中，向patrol服务请求相应http接口实现)
+3. 完成patrol模块的的相应连接模块代码
 4. 与patrol建立连接
 5. 按照巡检对象元信息表内容，定时上报信息
 6. commander前加一个web服务(单加或者整合到)，curl的方式获得信息
