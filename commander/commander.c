@@ -40,6 +40,8 @@ PG_MODULE_MAGIC;
 
 PG_FUNCTION_INFO_V1(commander_launch);
 
+#define TABLE_COUNT 6
+
 void		_PG_init(void);
 void		commander_main(Datum) pg_attribute_noreturn();
 
@@ -49,14 +51,32 @@ static volatile sig_atomic_t got_sigterm = false;
 
 /* GUC variables */
 static int	commander_naptime = 10;
-static int	commander_total_workers = 2;
+static int	commander_total_workers = 1;
 
+typedef struct table
+{
+    const char *name;
+    const char *create_sql;
+}table;
 
 typedef struct worktable
 {
 	const char *schema;
-	const char *name;
+	const table ts[TABLE_COUNT];
 } worktable;
+
+/*
+ * all meta table and statistics data table in commander db
+ */
+const worktable wt = {"commander",{
+                            {"db_info","create table db_info(hostname text, dbname text)"},\
+                            {"table_info","create table table_info(relid oid, tablename text)"},\
+                            {"func_info","create table func_info(funcid oid, funcname text)"},\
+                            {"db_report","create table db_report(dbname text, create_time timestamp)"},\
+                            {"func_report","create table func_report(create_time timestamp)"},\
+                            {"table_report","create table table_report(create_time timestamp)"},\
+                            }};
+
 
 /*
  * Signal handler for SIGTERM
@@ -95,7 +115,7 @@ commander_sighup(SIGNAL_ARGS)
  * already exist.
  */
 static void
-initialize_commander(worktable *table)
+initialize_commander()
 {
 	int			ret;
 	int			ntup;
@@ -106,16 +126,16 @@ initialize_commander(worktable *table)
 	StartTransactionCommand();
 	SPI_connect();
 	PushActiveSnapshot(GetTransactionSnapshot());
-	pgstat_report_activity(STATE_RUNNING, "initializing spi_worker schema");
+	pgstat_report_activity(STATE_RUNNING, "initializing commander schema");
 
 	/* XXX could we use CREATE SCHEMA IF NOT EXISTS? */
 	initStringInfo(&buf);
-	appendStringInfo(&buf, "select count(*) from pg_namespace where nspname = '%s'",
-					 table->schema);
+	appendStringInfo(&buf, "select count(*) from pg_namespace where nspname ='%s'",
+					 wt.schema);
 
 	ret = SPI_execute(buf.data, true, 0);
 	if (ret != SPI_OK_SELECT)
-		elog(FATAL, "SPI_execute failed: error code %d", ret);
+		elog(FATAL, "create schema failed: error code %d", ret);
 
 	if (SPI_processed != 1)
 		elog(FATAL, "not a singleton result");
@@ -129,14 +149,11 @@ initialize_commander(worktable *table)
 	if (ntup == 0)
 	{
 		resetStringInfo(&buf);
-		appendStringInfo(&buf,
-						 "CREATE SCHEMA \"%s\" "
-						 "CREATE TABLE \"%s\" ("
-						 "		type text CHECK (type IN ('total', 'delta')), "
-						 "		value	integer)"
-						 "CREATE UNIQUE INDEX \"%s_unique_total\" ON \"%s\" (type) "
-						 "WHERE type = 'total'",
-						 table->schema, table->name, table->name, table->name);
+
+		appendStringInfo(&buf, "CREATE SCHEMA \"%s\" ", wt.schema);
+        for (int i = 0; i < sizeof(wt.ts)/sizeof(table); ++i) {
+    		appendStringInfo(&buf, "%s", wt.ts[i].create_sql);
+        }
 
 		/* set statement start time */
 		SetCurrentStatementStartTimestamp();
@@ -156,15 +173,7 @@ initialize_commander(worktable *table)
 void
 commander_main(Datum main_arg)
 {
-	int			index = DatumGetInt32(main_arg);
-	worktable  *table;
-	StringInfoData buf;
-	char		name[20];
-
-	table = palloc(sizeof(worktable));
-	sprintf(name, "schema%d", index);
-	table->schema = pstrdup(name);
-	table->name = pstrdup("counted");
+	// int			index = DatumGetInt32(main_arg);
 
 	/* Establish signal handlers before unblocking signals. */
 	pqsignal(SIGHUP, commander_sighup);
@@ -176,35 +185,15 @@ commander_main(Datum main_arg)
 	/* Connect to our database */
 	BackgroundWorkerInitializeConnection("postgres", NULL);
 
-	elog(LOG, "%s initialized with %s.%s",
-		 MyBgworkerEntry->bgw_name, table->schema, table->name);
-	initialize_commander(table);
+	elog(LOG, "%s initialized with %s",
+		 MyBgworkerEntry->bgw_name, wt.schema);
+	initialize_commander();
 
-	/*
-	 * Quote identifiers passed to us.  Note that this must be done after
-	 * initialize_commander, because that routine assumes the names are not
-	 * quoted.
-	 *
-	 * Note some memory might be leaked here.
-	 */
-	table->schema = quote_identifier(table->schema);
-	table->name = quote_identifier(table->name);
-
+	StringInfoData buf;
 	initStringInfo(&buf);
 	appendStringInfo(&buf,
-					 "WITH deleted AS (DELETE "
-					 "FROM %s.%s "
-					 "WHERE type = 'delta' RETURNING value), "
-					 "total AS (SELECT coalesce(sum(value), 0) as sum "
-					 "FROM deleted) "
-					 "UPDATE %s.%s "
-					 "SET value = %s.value + total.sum "
-					 "FROM total WHERE type = 'total' "
-					 "RETURNING %s.value",
-					 table->schema, table->name,
-					 table->schema, table->name,
-					 table->name,
-					 table->name);
+					 "select count(*) from pg_stat_user_tables where schemaname = '%s';", quote_identifier(wt.schema));
+
 
 	/*
 	 * Main loop: do this until the SIGTERM handler tells us to terminate
@@ -266,9 +255,8 @@ commander_main(Datum main_arg)
 		/* We can now execute queries via SPI */
 		ret = SPI_execute(buf.data, false, 0);
 
-		if (ret != SPI_OK_UPDATE_RETURNING)
-			elog(FATAL, "cannot select from table %s.%s: error code %d",
-				 table->schema, table->name, ret);
+		if (ret != SPI_OK_SELECT)
+			elog(FATAL, "error code %d", ret);
 
 		if (SPI_processed > 0)
 		{
@@ -279,9 +267,9 @@ commander_main(Datum main_arg)
 											  SPI_tuptable->tupdesc,
 											  1, &isnull));
 			if (!isnull)
-				elog(LOG, "%s: count in %s.%s is now %d",
+				elog(LOG, "%s: count in %s is now %d",
 					 MyBgworkerEntry->bgw_name,
-					 table->schema, table->name, val);
+					 wt.schema, val);
 		}
 
 		/*
@@ -330,7 +318,7 @@ _PG_init(void)
 							"Number of workers.",
 							NULL,
 							&commander_total_workers,
-							2,
+							1,
 							1,
 							100,
 							PGC_POSTMASTER,
@@ -354,7 +342,7 @@ _PG_init(void)
 	 */
 	for (i = 1; i <= commander_total_workers; i++)
 	{
-		snprintf(worker.bgw_name, BGW_MAXLEN, "worker %d", i);
+		snprintf(worker.bgw_name, BGW_MAXLEN, "commander worker-%d", i);
 		worker.bgw_main_arg = Int32GetDatum(i);
 
 		RegisterBackgroundWorker(&worker);

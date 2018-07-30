@@ -62,10 +62,13 @@ func_superversion
 1. tcp长连接 rpc
 2. http调用 : 不用写代码可以curl的方式用，方便,并且也没那么高频
 
+# install with docker
+
 build:
     docker build -t postgres-commander --rm=true .
 
 debug:
+    docker run -i -t --entrypoint=sh postgres-commander
     docker run -i -t --entrypoint=sh postgres-commander
 
 run:
