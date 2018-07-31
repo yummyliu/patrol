@@ -161,11 +161,8 @@ func initFlag() {
 	flag.StringVar(&password,"w", "123", "password of user")
 
 	flag.Parse()
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-							host,
-							port,
+	connStr = fmt.Sprintf("user=%s dbname=%s sslmode=disable",
 							user,
-							password,
 							dbname)
 	log.Println(connStr)
 }
