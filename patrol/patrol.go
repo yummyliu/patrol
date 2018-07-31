@@ -1,6 +1,6 @@
 /* =============================================================================
 #     FileName: patrol.go
-#         Desc: 
+#         Desc:
 #       Author: LiuYangming
 #        Email: sdwhlym@126.com
 #     HomePage: http://yummyliu.github.io
@@ -13,10 +13,12 @@ package main
 import (
     "container/list"
     "database/sql"
+    "flag"
     "fmt"
     _ "github.com/lib/pq"
     "io/ioutil"
     "log"
+    "net/http"
     "strconv"
     "strings"
     "time"
@@ -27,12 +29,6 @@ type OpsMessage struct {
 	metric		  float64
 }
 const (
-	host     = "localhost"
-	port     = 5432
-	user     = "dba"
-	password = "dbapasswd"
-	dbname   = "postgres"
-
 	// cpu usage alert
 	rangeLen = 60
 	cpuThreshold = 50.0
@@ -41,6 +37,12 @@ const (
 	activeLen = 120
 	activeThreshold = 80
 )
+var host     = "localhost"
+var	port     = 5432
+var	user     = "dba"
+var	password = "dbapasswd"
+var	dbname   = "postgres"
+var connStr  = ""
 
 func getCPUSample() (idle, total uint64) {
     contents, err := ioutil.ReadFile("/proc/stat")
@@ -110,9 +112,6 @@ func cpuCheck(ops_ch chan<- OpsMessage) {
 func activityCheck(ops_ch chan<- OpsMessage) {
 	log.Println("go activity check")
 
-	connStr := fmt.Sprintf("host=%s port=%d user=%s "+
-	    "password=%s dbname=%s sslmode=disable",
-		    host, port, user, password, dbname)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		  panic(err)
@@ -149,13 +148,35 @@ func activityCheck(ops_ch chan<- OpsMessage) {
 	}
 }
 
+func dbInfo(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello World!")
+}
+
+func initFlag() {
+
+	flag.StringVar(&host, "h", "localhost", "db host")
+	flag.IntVar(&port, "p", 5432, "db port")
+	flag.StringVar(&user, "u", "dba", "db user")
+	flag.StringVar(&dbname,"d", "postgres", "monitor db")
+	flag.StringVar(&password,"w", "123", "password of user")
+
+	flag.Parse()
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+							host,
+							port,
+							user,
+							password,
+							dbname)
+	log.Println(connStr)
+}
+
 func main() {
+
+	initFlag()
+
     ops_ch := make(chan OpsMessage, 100)
 
 	// connect to PostgreSQL
-	connStr := fmt.Sprintf("host=%s port=%d user=%s "+
-	    "password=%s dbname=%s sslmode=disable",
-		    host, port, user, password, dbname)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		  panic(err)
@@ -185,6 +206,4 @@ func main() {
 			}
 		}
 	}
-
-	log.Println("patrol off from work!...")
 }
