@@ -1,0 +1,18 @@
+{
+    "Dbname": "postgres",
+    "Maxage": 1000000023,
+    "TopThreeAge": [
+        {
+            "Schemaname": "s1",
+            "Tablename": "t1"
+        },
+        {
+            "Schemaname": "s2",
+            "Tablename": "t2"
+        },
+        {
+            "Schemaname": "s3",
+            "Tablename": "t3"
+        }
+    ]
+}
