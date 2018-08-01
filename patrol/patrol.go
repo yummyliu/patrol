@@ -13,6 +13,7 @@ package main
 import (
     "container/list"
     "database/sql"
+    "encoding/json"
     "flag"
     "fmt"
     _ "github.com/lib/pq"
@@ -102,7 +103,7 @@ func cpuCheck(ops_ch chan<- OpsMessage) {
 					log.Printf("danger!,CPU usage is %f%% avg usage is %f%%\n", curcpuUsage, avgLoad)
 					ops_ch <- OpsMessage{OpsType: "killquery", metric: avgLoad}
 				} else {
-					log.Printf("safe~~~,CPU usage is %f%% avg usage is %f%%\n", curcpuUsage, avgLoad)
+//					log.Printf("safe~~~,CPU usage is %f%% avg usage is %f%%\n", curcpuUsage, avgLoad)
 				}
 			}
 		}
@@ -142,14 +143,32 @@ func activityCheck(ops_ch chan<- OpsMessage) {
 				}
 			} else {
 				counts = 0
-				log.Printf("safe~~~,count %d querys\n",count)
+//				log.Printf("safe~~~,count %d querys\n",count)
 			}
 		}
 	}
 }
 
-func dbInfo(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello World!")
+func getDbInfo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	dbinfo := &DbInfo{
+		Dbname: "postgres",
+		Maxage: 1000000023,
+		TopThreeAge: [3]DbTable{
+			{Tablename: "t1", Schemaname: "s1"},
+			{Tablename: "t2", Schemaname: "s2"},
+			{Tablename: "t3", Schemaname: "s3"},
+		},
+	}
+	log.Println(dbinfo)
+	json, err := json.Marshal(dbinfo)
+	log.Println(json)
+	if err != nil {
+		panic(err)
+	}
+	w.Write(json)
+
 }
 
 func initFlag() {
@@ -161,11 +180,24 @@ func initFlag() {
 	flag.StringVar(&password,"w", "123", "password of user")
 
 	flag.Parse()
-	connStr = fmt.Sprintf("user=%s dbname=%s sslmode=disable",
+	connStr = fmt.Sprintf("host=%s port=%v user=%s password=%s dbname=%s sslmode=disable",
+							host,
+							port,
 							user,
+							password,
 							dbname)
 	log.Println(connStr)
 }
+
+func httpServer() {
+
+	server := http.Server{
+		Addr: "127.0.0.1:8888",
+	}
+	http.HandleFunc("/dbinfo", getDbInfo)
+	server.ListenAndServe()
+}
+
 
 func main() {
 
@@ -184,11 +216,15 @@ func main() {
 		  panic(err)
 	}
 
+
 	// patrol go on duty
 	go cpuCheck(ops_ch)
 	go activityCheck(ops_ch)
-	log.Println("patrol go on duty!")
+	log.Println("patrol go on duty...")
 
+	// start http server
+	go httpServer()
+	log.Println("http service on 8888...")
 	// waiting for ops message
 	for  {
 		select {

@@ -1,12 +1,12 @@
 package main
 
 type DbTable struct {
-	tablename string
-	schemaname string
+	Tablename string
+	Schemaname string
 }
 
 type DbInfo struct {
-	dbname string
-	maxage string
-	topThreeAge [3]DbTable
+	Dbname string
+	Maxage int64
+	TopThreeAge [3]DbTable
 }
