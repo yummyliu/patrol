@@ -1,18 +1,27 @@
-# src/test/modules/worker_spi/Makefile
+#######################
+# Makefile
+#######################
 
-MODULES = commander
+# target
+TARGET := libcommander.so
 
-EXTENSION = commander
-DATA = commander--1.0.sql
-PGFILEDESC = "commander - patrol commander worker"
+# compile and lib parameter
+CC      := gcc
+LDFLAGS := -L/usr/local/pgsql/lib -Wl,-dead_strip_dylibs   -bundle -bundle_loader /usr/local/pgsql/bin/postgres
+LIBS    := ./command/command.a
+DEFINES :=
+INCLUDE:= -I. -I./ -I/usr/local/pgsql/include/server -I/usr/local/pgsql/include/internal
+CFLAGS  :=
+CXXFLAGS:=
 
-ifdef NOT_USE_PGXS
-subdir = src/test/modules/commander
-top_builddir = ../../../..
-include $(top_builddir)/src/Makefile.global
-include $(top_srcdir)/contrib/contrib-global.mk
-else
-PG_CONFIG = pg_config
-PGXS := $(shell $(PG_CONFIG) --pgxs)
-include $(PGXS)
-endif
+# link
+$(TARGET): commander.o $(LIBS)
+	$(CC) -fpic $(INCLUDE) $(LDFLAGS) -o $@ $^
+#compile
+commander.o: commander.c
+	$(CC) $(INCLUDE) -fno-strict-aliasing -fwrapv -c $^ -o $@
+
+# clean
+clean:
+	rm -fr *.o
+	rm -fr $(TARGET)
