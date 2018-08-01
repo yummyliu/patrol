@@ -4,7 +4,7 @@ MODULES = commander
 
 EXTENSION = commander
 DATA = commander--1.0.sql
-PGFILEDESC = "commander - background worker for patrol"
+PGFILEDESC = "commander - patrol commander worker"
 
 ifdef NOT_USE_PGXS
 subdir = src/test/modules/commander
