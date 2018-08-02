@@ -36,7 +36,7 @@
 #include "utils/snapmgr.h"
 #include "tcop/utility.h"
 
-PG_MODULE_MAGIC;
+//#include "command/command.h"
 
 PG_FUNCTION_INFO_V1(commander_launch);
 

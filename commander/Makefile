@@ -1,27 +1,14 @@
-#######################
-# Makefile
-#######################
+MODULE_big = commander
 
-# target
-TARGET := libcommander.so
+EXTENSION = commander
+DATA = commander--1.0.sql
 
-# compile and lib parameter
-CC      := gcc
-LDFLAGS := -L/usr/local/pgsql/lib -Wl,-dead_strip_dylibs   -bundle -bundle_loader /usr/local/pgsql/bin/postgres
-LIBS    := ./command/command.a
-DEFINES :=
-INCLUDE:= -I. -I./ -I/usr/local/pgsql/include/server -I/usr/local/pgsql/include/internal
-CFLAGS  :=
-CXXFLAGS:=
+CXX = c++ -std=c++11
 
-# link
-$(TARGET): commander.o $(LIBS)
-	$(CC) -fpic $(INCLUDE) $(LDFLAGS) -o $@ $^
-#compile
-commander.o: commander.c
-	$(CC) $(INCLUDE) -fno-strict-aliasing -fwrapv -c $^ -o $@
+SHLIB_LINK += -lstdc++
+#PG_CPPFLAGS += -std=c++11
+OBJS += commander.o command/command.o
 
-# clean
-clean:
-	rm -fr *.o
-	rm -fr $(TARGET)
+PG_CONFIG = pg_config
+PGXS := $(shell $(PG_CONFIG) --pgxs)
+include $(PGXS)

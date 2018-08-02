@@ -13,10 +13,7 @@ extern "C" {
 #include <postgres.h>    //all C headers and macros go inside extern "C"
 #include <utils/rel.h>
 
-#ifdef PG_MODULE_MAGIC
-PG_MODULE_MAGIC;
-#endif
-
+#include "command.h"
 PG_FUNCTION_INFO_V1(sumofall);
 }
 
