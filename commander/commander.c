@@ -8,76 +8,14 @@
 #   LastChange: 2018-07-27 14:22:58
 #      History:
 ============================================================================= */
-/*
- * This code connects to a database, creates a schema and table, and summarizes
- * the numbers contained therein.  To see it working, insert an initial value
- * with "total" type and some initial value; then insert some other rows with
- * "delta" type.  Delta rows will be deleted by this worker and their values
- * aggregated into the total.
- */
 #include "postgres.h"
+#include "command/command.h"
 
-/* These are always necessary for a bgworker */
-#include "miscadmin.h"
-#include "postmaster/bgworker.h"
-#include "storage/ipc.h"
-#include "storage/latch.h"
-#include "storage/lwlock.h"
-#include "storage/proc.h"
-#include "storage/shmem.h"
-
-/* these headers are used by this particular worker's code */
-#include "access/xact.h"
-#include "executor/spi.h"
-#include "fmgr.h"
-#include "lib/stringinfo.h"
-#include "pgstat.h"
-#include "utils/builtins.h"
-#include "utils/snapmgr.h"
-#include "tcop/utility.h"
-
-//#include "command/command.h"
+#ifdef PG_MODULE_MAGIC
+PG_MODULE_MAGIC;
+#endif
 
 PG_FUNCTION_INFO_V1(commander_launch);
-
-#define TABLE_COUNT 6
-
-void		_PG_init(void);
-void		commander_main(Datum) pg_attribute_noreturn();
-
-/* flags set by signal handlers */
-static volatile sig_atomic_t got_sighup = false;
-static volatile sig_atomic_t got_sigterm = false;
-
-/* GUC variables */
-static int	commander_naptime = 10;
-static int	commander_total_workers = 1;
-
-typedef struct table
-{
-    const char *name;
-    const char *create_sql;
-}table;
-
-typedef struct worktable
-{
-	const char *schema;
-	const table ts[TABLE_COUNT];
-} worktable;
-
-/*
- * all meta table and statistics data table in commander db
- */
-const worktable wt = {"commander",{
-                            {"db_info","create table db_info(hostname text, dbname text)"},\
-                            {"table_info","create table table_info(relid oid, tablename text)"},\
-                            {"func_info","create table func_info(funcid oid, funcname text)"},\
-                            {"db_report","create table db_report(dbname text, create_time timestamp)"},\
-                            {"func_report","create table func_report(create_time timestamp)"},\
-                            {"table_report","create table table_report(create_time timestamp)"},\
-                            }};
-
-
 /*
  * Signal handler for SIGTERM
  *		Set a flag to let the main loop to terminate, and set our latch to wake
@@ -266,10 +204,10 @@ commander_main(Datum main_arg)
 			val = DatumGetInt32(SPI_getbinval(SPI_tuptable->vals[0],
 											  SPI_tuptable->tupdesc,
 											  1, &isnull));
-			if (!isnull)
-				elog(LOG, "%s: count in %s is now %d",
-					 MyBgworkerEntry->bgw_name,
-					 wt.schema, val);
+//			if (!isnull)
+//				elog(LOG, "%s: count in %s is now %d",
+//					 MyBgworkerEntry->bgw_name,
+//					 wt.schema, val);
 		}
 
 		/*

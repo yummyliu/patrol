@@ -3,8 +3,9 @@ MODULE_big = commander
 EXTENSION = commander
 DATA = commander--1.0.sql
 
-CXX = c++ -std=c++11
+CXX = c++ -std=c++11 -Wno-deprecated-register
 
+CFLAGS_SL += -lcurl
 SHLIB_LINK += -lstdc++
 #PG_CPPFLAGS += -std=c++11
 OBJS += commander.o command/command.o
