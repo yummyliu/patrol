@@ -1,10 +1,12 @@
 {
-  "dbinfo": [
-    { "id": 1, "name": "postgres", "maxage": 19234 },
-    { "id": 2, "name": "pgbench", "maxage": 1239082 }
-  ],
-  "profile": {
-    "name": "typicode",
-    "post": 5432
-  }
+	"dbs" : {
+		"dbinfo": [
+			{ "id": 1, "name": "postgres", "maxage": 19234 },
+			{ "id": 2, "name": "pgbench", "maxage": 1239082 }
+		],
+		"profile": {
+			"name": "typicode",
+			"post": 5432
+		}
+	}
 }
