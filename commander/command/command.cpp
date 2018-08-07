@@ -16,7 +16,7 @@ extern "C" {
 
 #include "command.h"
 
-	PG_FUNCTION_INFO_V1(getdbinfo);
+	PG_FUNCTION_INFO_V1(getjson);
 }
 
 #include <string>
@@ -27,7 +27,13 @@ extern "C" {
 using namespace std;
 
 extern "C" {
-	Datum getdbinfo(PG_FUNCTION_ARGS) {
+	/* CREATE OR REPLACE FUNCTION getjson ()
+	 *     RETURNS cstring
+	 *     AS 'commander.so',
+	 *     'getjson'
+	 *     LANGUAGE C ;
+	 */
+	Datum getjson(PG_FUNCTION_ARGS) {
 		std::ostringstream oss;
 		auto dbId = PG_GETARG_INT32(0);
 
@@ -36,6 +42,16 @@ extern "C" {
 
 		Json::Value ss = getJson(url,"dbinfo");
 
-		PG_RETURN_CSTRING(ss.asCString());
+		try {
+			Json::FastWriter fastWriter;
+			std::string output = fastWriter.write(ss);
+			elog(INFO, "msg: %s", output.c_str());
+
+			HeapTuple rettuple;
+			CStringGetDatum(output.c_str());
+			PG_RETURN_CSTRING(pstrdup(output.c_str()));
+		}catch(Json::LogicError e) {
+			PG_RETURN_CSTRING(e.what());
+		}
 	}
 }
