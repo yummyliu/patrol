@@ -20,6 +20,8 @@
 #include "utils/snapmgr.h"
 #include "tcop/utility.h"
 
+
+
 #define TABLE_COUNT 6
 
 void		_PG_init(void);
@@ -35,8 +37,8 @@ static int	commander_total_workers = 1;
 
 typedef struct table
 {
-    const char *name;
-    const char *create_sql;
+	const char *name;
+	const char *create_sql;
 }table;
 
 typedef struct worktable
@@ -49,12 +51,12 @@ typedef struct worktable
  * all meta table and statistics data table in commander db
  */
 const worktable wt = {"commander",{
-                            {"db_info","create table db_info(hostname text, dbname text)"},\
-                            {"table_info","create table table_info(relid oid, tablename text)"},\
-                            {"func_info","create table func_info(funcid oid, funcname text)"},\
-                            {"db_report","create table db_report(dbname text, create_time timestamp)"},\
-                            {"func_report","create table func_report(create_time timestamp)"},\
-                            {"table_report","create table table_report(create_time timestamp)"},\
-                            }};
+	{"db_info","create table db_info(hostname text, dbname text)"},\
+	{"table_info","create table table_info(relid oid, tablename text)"},\
+	{"func_info","create table func_info(funcid oid, funcname text)"},\
+	{"db_report","create table db_report(dbname text, create_time timestamp)"},\
+	{"func_report","create table func_report(create_time timestamp)"},\
+	{"table_report","create table table_report(create_time timestamp)"},\
+}};
 
 #endif /* ifndef COMMAND_H */
