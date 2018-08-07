@@ -2,12 +2,10 @@ FROM postgresql-dev
 
 ADD . /commander
 
-# RUN echo '@edge http://nl.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories \ 
-#     && apk add --upgrade --no-cache apk-tools@edge && \
-#     apk update && \
-#     apk add curl make gcc "libc-dev" "libpq" "postgresql-client" "postgresql" "postgresql-contrib" "postgresql-dev" && \
-RUN mkdir /docker-entrypoint-initdb.d && \
-    chmod +x /usr/local/bin/gosu && \
+RUN apk add libstdc++ curl-dev jsoncpp-dev && \
+	chmod +x /usr/local/bin/gosu && \
+    rm -rf /docker-entrypoint-initdb.d && \
+    mkdir /docker-entrypoint-initdb.d && \
     apk del curl && \
     rm -rf /var/cache/apk/*
 
