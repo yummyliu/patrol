@@ -73,3 +73,15 @@ debug:
 
 run:
     docker run -i -P postgres-commander
+
+# usage
+CREATE OR REPLACE FUNCTION rc_out (personal_number)
+    RETURNS cstring
+AS 'rc.so',
+'personal_number_out'
+LANGUAGE 'C';
+select
+    getjson::json ->> 1
+from (
+    select
+        getjson ()::text) as a;
