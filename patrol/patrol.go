@@ -5,236 +5,140 @@
 #        Email: sdwhlym@126.com
 #     HomePage: http://yummyliu.github.io
 #      Version: 0.0.1
-#   LastChange: 2018-07-27 13:06:07
+#   LastChange: 2018-08-10 11:21:02
 #      History:
 ============================================================================= */
 package main
 
 import (
-    "container/list"
     "database/sql"
-    "encoding/json"
     "flag"
     "fmt"
     _ "github.com/lib/pq"
-    "io/ioutil"
-    "log"
+	"github.com/op/go-logging"
     "net/http"
-    "strconv"
-    "strings"
-    "time"
+    "os"
 )
+
+const (
+	// DB_CPU_ALL_CORE_HIGH
+	rangeLen = 60
+	cpuThreshold = 50.0
+
+	// POSTGRES_STAT_ACTIVITY_ACTIVE
+	activeLen = 120
+	activeThreshold = 80
+
+	// TODO
+	// PGBOUNCER_AVG_QUERY_SLOW
+	// POSTGRES_STAT_ACIVITY_IDLE_IN_TRANSCATION
+	// POSTGRES_STAT_ACTIVITY_IDLE_IN_TRANSCATION_ABORTED
+	// PGBOUNCER_POSTGRES_SERVICES_DOWN
+	// RAM_USAGE_HIGH
+	// FreeSpaceLessThan10Percentage
+)
+
+var host     = "localhost"
+var	port     = 5432
+var	user     = "postgres"
+var	password = "123"
+var	dbname   = "postgres"
+var connStr  = ""
+var cancelSQL = "select pg_cancel_backend(pid) from pg_stat_activity where pid <> pg_backend_pid() and usename != 'dba';"
+var db *sql.DB
+var log = logging.MustGetLogger("patrol")
 
 type OpsMessage struct {
     OpsType       string
 	metric		  float64
 }
-const (
-	// cpu usage alert
-	rangeLen = 60
-	cpuThreshold = 50.0
-
-	// active activity alert
-	activeLen = 120
-	activeThreshold = 80
-)
-var host     = "localhost"
-var	port     = 5432
-var	user     = "dba"
-var	password = "dbapasswd"
-var	dbname   = "postgres"
-var connStr  = ""
-
-func getCPUSample() (idle, total uint64) {
-    contents, err := ioutil.ReadFile("/proc/stat")
-    if err != nil {
-        return
-    }
-    lines := strings.Split(string(contents), "\n")
-    for _, line := range(lines) {
-        fields := strings.Fields(line)
-        if fields[0] == "cpu" {
-            numFields := len(fields)
-            for i := 1; i < numFields; i++ {
-                val, err := strconv.ParseUint(fields[i], 10, 64)
-                if err != nil {
-                    log.Println("Error: ", i, fields[i], err)
-                }
-                total += val // tally up all the numbers to get total ticks
-                if i == 4 {  // idle is the 5th field in the cpu line
-                    idle = val
-                }
-            }
-            return
-        }
-    }
-    return
-}
-
-func cpuloadrate(idleTicks, totalTicks float64) float64 {
-	return 100 * (totalTicks - idleTicks) / totalTicks
-}
-
-func cpuCheck(ops_ch chan<- OpsMessage) {
-	log.Println("go cpu check")
-	// stats collect
-	sumCpuLoads := list.New()
-	preidle, pretotal := getCPUSample()
-	sumLoad := 0.0
-	for  {
-		time.Sleep(1 * time.Second)
-    	curidle, curtotal := getCPUSample()
-
-    	curcpuUsage := cpuloadrate(float64(curidle - preidle), float64(curtotal - pretotal))
-
-		// put cur load into list and add it into sum
-		sumLoad += curcpuUsage;
-		sumCpuLoads.PushBack(curcpuUsage)
-
-		if sumCpuLoads.Len() > rangeLen {
-			if cur, ok := sumCpuLoads.Front().Value.(float64); ok {
-
-				// remove oldest load outof list and cut it outof sum
-				sumCpuLoads.Remove(sumCpuLoads.Front())
-				sumLoad -= cur
-
-				avgLoad := (sumLoad/float64(rangeLen))
-				if avgLoad > cpuThreshold {
-					log.Printf("danger!,CPU usage is %f%% avg usage is %f%%\n", curcpuUsage, avgLoad)
-					ops_ch <- OpsMessage{OpsType: "killquery", metric: avgLoad}
-				} else {
-//					log.Printf("safe~~~,CPU usage is %f%% avg usage is %f%%\n", curcpuUsage, avgLoad)
-				}
-			}
-		}
-	}
-}
-
-func activityCheck(ops_ch chan<- OpsMessage) {
-	log.Println("go activity check")
-
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		  panic(err)
-	}
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		  panic(err)
-	}
-
-	counts := 0
-	for  {
-		time.Sleep(1 * time.Second)
-
-		var count int
-		err := db.QueryRow("select count(*) as count from pg_stat_activity where state = 'active';").Scan(&count)
-		switch {
-		case err == sql.ErrNoRows:
-		        log.Printf("0 row")
-		case err != nil:
-		        log.Fatal(err)
-		default:
-			if count > activeThreshold{
-				counts +=1
-				if counts > activeLen {
-					log.Printf("danger!,active count is %d%%\n", counts )
-					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
-				}
-			} else {
-				counts = 0
-//				log.Printf("safe~~~,count %d querys\n",count)
-			}
-		}
-	}
-}
-
-func getDbInfo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	dbinfo := &DbInfo{
-		Dbname: "postgres",
-		Maxage: 1000000023,
-		TopThreeAge: [3]DbTable{
-			{Tablename: "t1", Schemaname: "s1"},
-			{Tablename: "t2", Schemaname: "s2"},
-			{Tablename: "t3", Schemaname: "s3"},
-		},
-	}
-	log.Println(dbinfo)
-	json, err := json.Marshal(dbinfo)
-	log.Println(json)
-	if err != nil {
-		panic(err)
-	}
-	w.Write(json)
-
-}
 
 func initFlag() {
 
-	flag.StringVar(&host, "h", "localhost", "db host")
-	flag.IntVar(&port, "p", 5432, "db port")
-	flag.StringVar(&user, "u", "dba", "db user")
-	flag.StringVar(&dbname,"d", "postgres", "monitor db")
-	flag.StringVar(&password,"w", "123", "password of user")
+	flag.StringVar(&host, "dbhost", "localhost", "db host")
+	flag.IntVar(&port, "dbport", 5432, "db port")
+	flag.StringVar(&user, "dbuser", "dba", "db user")
+	flag.StringVar(&dbname,"dbname", "postgres", "monitor db")
+	// XXX change to no password in command line
+	flag.StringVar(&password,"passwd", "123", "password of user")
 
 	flag.Parse()
-	connStr = fmt.Sprintf("host=%s port=%v user=%s password=%s dbname=%s sslmode=disable",
-							host,
-							port,
-							user,
-							password,
-							dbname)
-	log.Println(connStr)
 }
+func initlog() {
+	var format = logging.MustStringFormatter(
+	`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+	)
+	// For demo purposes, create two backend for os.Stderr.
+	backend1 := logging.NewLogBackend(os.Stderr, "", 0)
+	backend2 := logging.NewLogBackend(os.Stderr, "", 0)
 
+	// For messages written to backend2 we want to add some additional
+	// information to the output, including the used log level and the name of
+	// the function.
+	backend2Formatter := logging.NewBackendFormatter(backend2, format)
+
+	// Only errors and more severe messages should be sent to backend1
+	backend1Leveled := logging.AddModuleLevel(backend1)
+	backend1Leveled.SetLevel(logging.ERROR, "")
+
+	// Set the backends to be used.
+	logging.SetBackend(backend1Leveled, backend2Formatter)
+}
 func httpServer() {
 
 	server := http.Server{
 		Addr: "127.0.0.1:8888",
 	}
 	http.HandleFunc("/dbinfo", getDbInfo)
+
+	log.Info("http service on (8888)...")
 	server.ListenAndServe()
 }
 
-
-func main() {
-
-	initFlag()
-
-    ops_ch := make(chan OpsMessage, 100)
-
-	// connect to PostgreSQL
+func connectPG() {
+	connStr = fmt.Sprintf("host=%s port=%v user=%s password=%s dbname=%s sslmode=disable",
+							host,
+							port,
+							user,
+							password,
+							dbname)
+	log.Info(connStr)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		  panic(err)
 	}
-	defer db.Close()
 	err = db.Ping()
 	if err != nil {
 		  panic(err)
 	}
+	defer db.Close()
+}
 
+func main() {
 
+	initFlag()
+	initlog()
+    ops_ch := make(chan OpsMessage, 100)
+
+	// connect to PostgreSQL
+	// connectPG()
 	// patrol go on duty
-	go cpuCheck(ops_ch)
-	go activityCheck(ops_ch)
-	log.Println("patrol go on duty...")
+	go CpuChecker(ops_ch)
+	// go activityCheck(ops_ch)
 
 	// start http server
 	go httpServer()
-	log.Println("http service on 8888...")
-	// waiting for ops message
+
 	for  {
+	// waiting for ops message
 		select {
 		case msg := <-ops_ch:
 			if msg.OpsType == "killquery" {
-				res, err := db.Exec("select pg_cancel_backend(pid) from pg_stat_activity where pid <> pg_backend_pid() and usename != 'dba';")
+				res, err := db.Exec(cancelSQL)
 
 				if err == nil {
 					rows,_ := res.RowsAffected()
-					log.Printf("metric: %f, kill %d querys\n",msg.metric, rows)
+					log.Infof("metric: %f, kill %d querys\n",msg.metric, rows)
 				}
 			}
 		}
