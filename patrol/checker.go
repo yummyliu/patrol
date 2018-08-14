@@ -30,8 +30,8 @@ const (
 	activeThreshold = 80
 
 	// POSTGRES_STAT_ACIVITY_IDLE_IN_TRANSCATION
-	idleInTranLen = 60
-	idleInTranThreshold = 10
+	idleInTranLen = 10
+	idleInTranThreshold = 1
 
 	// TODO
 	// POSTGRES_STAT_ACTIVITY_IDLE_IN_TRANSCATION_ABORTED
@@ -152,17 +152,19 @@ func ActivityChecker(ops_ch chan<- OpsMessage) {
 				activeCounts ++
 				if activeCounts > activeLen {
 					log.Warningf("ACTIVITY: %s -> %d\n", state, count)
-//					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
 				} else {
 					activeCounts = 0
 				}
 				break;
 			case "idle in transaction":
 				curidleInTranCount = count
-				idleInTranCounts ++
-				if idleInTranCounts > idleInTranLen {
-					log.Warningf("ACTIVITY: %s -> %d\n", state, count)
-//					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+				if curidleInTranCount >= idleInTranThreshold {
+					idleInTranCounts ++
+					if idleInTranCounts > idleInTranLen {
+						log.Warningf("ACTIVITY: %s -> %d\n", state, count)
+						ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+					}
 				} else {
 					idleInTranCounts = 0
 				}
@@ -171,6 +173,7 @@ func ActivityChecker(ops_ch chan<- OpsMessage) {
 				break;
 			}
 		}
-		log.Infof("ACTIVITY: active->%d; idleInTransaction->%d\n", curActiveCount, curidleInTranCount)
+		log.Infof("ACTIVITY: active->%d; idleInTransaction->%d:%d\n", curActiveCount,
+		curidleInTranCount, idleInTranCounts)
 	}
 }
