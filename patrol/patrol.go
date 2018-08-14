@@ -20,24 +20,6 @@ import (
     "os"
 )
 
-const (
-	// DB_CPU_ALL_CORE_HIGH
-	rangeLen = 60
-	cpuThreshold = 50.0
-
-	// POSTGRES_STAT_ACTIVITY_ACTIVE
-	activeLen = 120
-	activeThreshold = 80
-
-	// TODO
-	// PGBOUNCER_AVG_QUERY_SLOW
-	// POSTGRES_STAT_ACIVITY_IDLE_IN_TRANSCATION
-	// POSTGRES_STAT_ACTIVITY_IDLE_IN_TRANSCATION_ABORTED
-	// PGBOUNCER_POSTGRES_SERVICES_DOWN
-	// RAM_USAGE_HIGH
-	// FreeSpaceLessThan10Percentage
-)
-
 var host     = "localhost"
 var	port     = 5432
 var	user     = "postgres"
@@ -66,7 +48,7 @@ func initFlag() {
 }
 func initlog() {
 	var format = logging.MustStringFormatter(
-	`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+		`%{color}%{time:15:04:05.000} » %{level:.4s} %{id:03x}%{color:reset} %{message}`,
 	)
 	// For demo purposes, create two backend for os.Stderr.
 	backend1 := logging.NewLogBackend(os.Stderr, "", 0)
@@ -120,11 +102,9 @@ func main() {
 	initlog()
     ops_ch := make(chan OpsMessage, 100)
 
-	// connect to PostgreSQL
-	// connectPG()
-	// patrol go on duty
+	connectPG()
 	go CpuChecker(ops_ch)
-	// go activityCheck(ops_ch)
+	go ActivityChecker(ops_ch)
 
 	// start http server
 	go httpServer()

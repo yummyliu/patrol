@@ -20,6 +20,27 @@ import (
     "time"
 )
 
+const (
+	// DB_CPU_ALL_CORE_HIGH
+	rangeLen = 60
+	cpuThreshold = 50.0
+
+	// POSTGRES_STAT_ACTIVITY_ACTIVE
+	activeLen = 120
+	activeThreshold = 80
+
+	// POSTGRES_STAT_ACIVITY_IDLE_IN_TRANSCATION
+	idleInTranLen = 60
+	idleInTranThreshold = 10
+
+	// TODO
+	// POSTGRES_STAT_ACTIVITY_IDLE_IN_TRANSCATION_ABORTED
+	// PGBOUNCER_AVG_QUERY_SLOW
+	// PGBOUNCER_POSTGRES_SERVICES_DOWN
+	// RAM_USAGE_HIGH
+	// FreeSpaceLessThan10Percentage
+)
+
 func getCPUSample() (idle, total uint64) {
     contents, err := ioutil.ReadFile("/proc/stat")
     if err != nil {
@@ -52,7 +73,7 @@ func cpuloadrate(idleTicks, totalTicks float64) float64 {
 }
 
 func CpuChecker(ops_ch chan<- OpsMessage) {
-	log.Info("cpu checker on work...")
+	log.Info("CpuChecker on work...")
 
 	// stats collect
 	sumCpuLoads := list.New()
@@ -77,18 +98,18 @@ func CpuChecker(ops_ch chan<- OpsMessage) {
 
 				avgLoad := (sumLoad/float64(rangeLen))
 				if avgLoad > cpuThreshold {
-					log.Warningf("danger!,CPU usage is %f%% avg usage is %f%%\n", curcpuUsage, avgLoad)
+					log.Warningf("CUR_CPUUSAGE: %f; AVG_CPUUSAGE: %f\n", curcpuUsage, avgLoad)
 					ops_ch <- OpsMessage{OpsType: "killquery", metric: avgLoad}
 				} else {
-					log.Debugf("safe~~~,CPU usage is %f%% avg usage is %f%%\n", curcpuUsage, avgLoad)
+					log.Debugf("CUR_CPUUSAGE: %f; AVG_CPUUSAGE: %f\n", curcpuUsage, avgLoad)
 				}
 			}
 		}
 	}
 }
 
-func activityCheck(ops_ch chan<- OpsMessage) {
-	log.Info("go activity check")
+func ActivityChecker(ops_ch chan<- OpsMessage) {
+	log.Info("ActivityChecker on work...")
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -100,28 +121,56 @@ func activityCheck(ops_ch chan<- OpsMessage) {
 		  panic(err)
 	}
 
-	counts := 0
+	var (
+		activeCounts int = 0
+		idleInTranCounts int = 0
+	)
 	for  {
 		time.Sleep(1 * time.Second)
 
-		var count int
-		err := db.QueryRow("select count(*) as count from pg_stat_activity where state = 'active';").Scan(&count)
-		switch {
-		case err == sql.ErrNoRows:
-		        log.Panic("0 row")
-		case err != nil:
-		        log.Panic(err)
-		default:
-			if count > activeThreshold{
-				counts +=1
-				if counts > activeLen {
-					log.Warningf("danger!,active count is %d%%\n", counts )
-					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+		rows, err := db.Query("select state,count(*) from pg_stat_activity group by state having state != '';")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		var (
+			curActiveCount int = 0
+			curidleInTranCount int = 0
+		)
+		for rows.Next() {
+			var (
+				state string
+				count int
+			)
+			if err := rows.Scan(&state, &count); err != nil {
+                log.Fatal(err)
+			}
+			switch state {
+			case "active":
+				curActiveCount = count
+				activeCounts ++
+				if activeCounts > activeLen {
+					log.Warningf("ACTIVITY: %s -> %d\n", state, count)
+//					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+				} else {
+					activeCounts = 0
 				}
-			} else {
-				counts = 0
-				log.Debugf("safe~~~,count %d querys\n",count)
+				break;
+			case "idle in transaction":
+				curidleInTranCount = count
+				idleInTranCounts ++
+				if idleInTranCounts > idleInTranLen {
+					log.Warningf("ACTIVITY: %s -> %d\n", state, count)
+//					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+				} else {
+					idleInTranCounts = 0
+				}
+				break;
+			default:
+				break;
 			}
 		}
+		log.Infof("ACTIVITY: active->%d; idleInTransaction->%d\n", curActiveCount, curidleInTranCount)
 	}
 }
