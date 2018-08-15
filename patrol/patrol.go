@@ -26,7 +26,7 @@ var	user     = "postgres"
 var	password = "123"
 var	dbname   = "postgres"
 var connStr  = ""
-var cancelSQL = "select pg_cancel_backend(pid) from pg_stat_activity where pid <> pg_backend_pid() and usename != 'dba';"
+var cancelSQL = "select pg_terminate_backend(pid) from pg_stat_activity where pid <> pg_backend_pid() and usename != 'dba';"
 var db *sql.DB
 var log = logging.MustGetLogger("patrol")
 
@@ -77,7 +77,7 @@ func httpServer() {
 	server.ListenAndServe()
 }
 
-func connectPG() {
+func connectPG() *sql.DB {
 	connStr = fmt.Sprintf("host=%s port=%v user=%s password=%s dbname=%s sslmode=disable",
 							host,
 							port,
@@ -93,7 +93,8 @@ func connectPG() {
 	if err != nil {
 		  panic(err)
 	}
-	defer db.Close()
+
+	return db
 }
 
 func main() {
@@ -102,7 +103,11 @@ func main() {
 	initlog()
     ops_ch := make(chan OpsMessage, 100)
 
-	connectPG()
+	db = connectPG()
+	err := db.Ping()
+	if err != nil {
+		  panic(err)
+	}
 	go CpuChecker(ops_ch)
 	go ActivityChecker(ops_ch)
 
@@ -123,4 +128,6 @@ func main() {
 			}
 		}
 	}
+
+	defer db.Close()
 }

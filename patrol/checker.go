@@ -30,8 +30,8 @@ const (
 	activeThreshold = 80
 
 	// POSTGRES_STAT_ACIVITY_IDLE_IN_TRANSCATION
-	idleInTranLen = 10
-	idleInTranThreshold = 1
+	idleInTranLen = 60
+	idleInTranThreshold = 10
 
 	// TODO
 	// POSTGRES_STAT_ACTIVITY_IDLE_IN_TRANSCATION_ABORTED
@@ -149,10 +149,12 @@ func ActivityChecker(ops_ch chan<- OpsMessage) {
 			switch state {
 			case "active":
 				curActiveCount = count
-				activeCounts ++
-				if activeCounts > activeLen {
-					log.Warningf("ACTIVITY: %s -> %d\n", state, count)
-					ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+				if curActiveCount >= activeThreshold {
+					activeCounts ++
+					if activeCounts > activeLen {
+						log.Warningf("ACTIVITY: %s -> %d\n", state, count)
+						ops_ch <- OpsMessage{OpsType: "killquery", metric: float64(count)}
+					}
 				} else {
 					activeCounts = 0
 				}
