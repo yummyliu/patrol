@@ -187,20 +187,10 @@ func CheckPGalive(ops_ch chan<- OpsMessage) {
 	for  {
 		time.Sleep(5 * time.Second)
 
-		command := exec.Command("pg_ctl", "status", "-D","/Users/liuyangming/pgdata")
-		err := command.Start()
+		command := exec.Command("pg_ctl", "status", "-D",c.PgData)
+		err := command.Run()
 		if nil != err {
-			log.Error(err)
-			ops_ch <- OpsMessage{OpsType: "pg_restart", metric: float64(-1)}
-			continue
-		}
-		err = command.Wait()
-		if nil != err {
-			log.Error(err)
-			continue
-		}
-
-		if !command.ProcessState.Success() {
+//			ops_ch <- OpsMessage{OpsType: "pg_restart", metric: float64(-1)}
 			log.Warning("PostgreSQL Service Down!!!");
 		}
 	}
@@ -211,19 +201,9 @@ func CheckPGBalive(ops_ch chan<- OpsMessage) {
 		time.Sleep(5 * time.Second)
 
 		command := exec.Command("pgrep", "pgbouncer")
-		err := command.Start()
+		err := command.Run()
 		if nil != err {
-			log.Error(err)
-			continue
-		}
-		err = command.Wait()
-		if nil != err {
-			log.Error(err)
-			continue
-		}
-
-		if !command.ProcessState.Success() {
-			ops_ch <- OpsMessage{OpsType: "pgb_restart", metric: float64(-1)}
+//			ops_ch <- OpsMessage{OpsType: "pgb_restart", metric: float64(-1)}
 			log.Warning("Pgbouncer Service Down!!!");
 		}
 	}

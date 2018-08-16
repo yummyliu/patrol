@@ -49,7 +49,7 @@ func initFlag() {
 
 func initlog() {
 	var format = logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.000} » %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+		`%{color}%{time:15:04:05.000}%{shortfile} » %{level:.4s} %{id:03x}%{color:reset} %{message}`,
 	)
 	backend1 := logging.NewLogBackend(os.Stderr, "", 0)
 	backend2 := logging.NewLogBackend(os.Stderr, "", 0)
