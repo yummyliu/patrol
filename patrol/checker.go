@@ -15,6 +15,7 @@ import (
     "database/sql"
     _ "github.com/lib/pq"
     "io/ioutil"
+    "os/exec"
     "strconv"
     "strings"
     "time"
@@ -33,10 +34,12 @@ const (
 	idleInTranLen = 60
 	idleInTranThreshold = 10
 
+	// PGBOUNCER_POSTGRES_SERVICES_DOWN
+	downLen = 3
+
 	// TODO
 	// POSTGRES_STAT_ACTIVITY_IDLE_IN_TRANSCATION_ABORTED
 	// PGBOUNCER_AVG_QUERY_SLOW
-	// PGBOUNCER_POSTGRES_SERVICES_DOWN
 	// RAM_USAGE_HIGH
 	// FreeSpaceLessThan10Percentage
 )
@@ -111,7 +114,7 @@ func CpuChecker(ops_ch chan<- OpsMessage) {
 func ActivityChecker(ops_ch chan<- OpsMessage) {
 	log.Info("ActivityChecker on work...")
 
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", c.ConnStr)
 	if err != nil {
 		  panic(err)
 	}
@@ -177,5 +180,51 @@ func ActivityChecker(ops_ch chan<- OpsMessage) {
 		}
 		log.Infof("ACTIVITY: active->%d; idleInTransaction->%d:%d\n", curActiveCount,
 		curidleInTranCount, idleInTranCounts)
+	}
+}
+
+func CheckPGalive(ops_ch chan<- OpsMessage) {
+	for  {
+		time.Sleep(5 * time.Second)
+
+		command := exec.Command("pg_ctl", "status", "-D","/Users/liuyangming/pgdata")
+		err := command.Start()
+		if nil != err {
+			log.Error(err)
+			ops_ch <- OpsMessage{OpsType: "pg_restart", metric: float64(-1)}
+			continue
+		}
+		err = command.Wait()
+		if nil != err {
+			log.Error(err)
+			continue
+		}
+
+		if !command.ProcessState.Success() {
+			log.Warning("PostgreSQL Service Down!!!");
+		}
+	}
+}
+
+func CheckPGBalive(ops_ch chan<- OpsMessage) {
+	for  {
+		time.Sleep(5 * time.Second)
+
+		command := exec.Command("pgrep", "pgbouncer")
+		err := command.Start()
+		if nil != err {
+			log.Error(err)
+			continue
+		}
+		err = command.Wait()
+		if nil != err {
+			log.Error(err)
+			continue
+		}
+
+		if !command.ProcessState.Success() {
+			ops_ch <- OpsMessage{OpsType: "pgb_restart", metric: float64(-1)}
+			log.Warning("Pgbouncer Service Down!!!");
+		}
 	}
 }

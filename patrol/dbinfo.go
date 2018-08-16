@@ -45,3 +45,14 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(json)
 }
+
+func HttpServer() {
+
+	server := http.Server{
+		Addr: "127.0.0.1:8888",
+	}
+	http.HandleFunc("/dbinfo", getDbInfo)
+
+	log.Info("http service on (8888)...")
+	server.ListenAndServe()
+}
