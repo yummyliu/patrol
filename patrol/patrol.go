@@ -25,9 +25,7 @@ type Conf struct {
 	ConnStr string `yaml:"connstr"`
 	PgData string `yaml:"pgdata"`
 	KillQuerySQL string `yaml:"killquery"`
-	PgCheck string `yaml:"pgcheck"`
 	PgRestart string `yaml:"pgrestart"`
-	PgbCheck string `yaml:"pgbcheck"`
 	PgbRestart string `yaml:"pgbrestart"`
 }
 var configFile string

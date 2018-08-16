@@ -1,8 +1,6 @@
-connstr: dbname=postgres user=postgres password=123 sslmode=disable
-pgdata:  /Users/liuyangming/pgdata
+connstr: dbname=postgres user=postgres sslmode=disable
+pgdata:  /data/devdb_10/data
 killquery: select pg_terminate_backend(pid) from pg_stat_activity where pid <> pg_backend_pid() and usename != 'dba';
-pgcheck: pg_ctl status -D /Users/liuyangming/pgdata
-pgrestart: pg_ctl restart -D /Users/liuyangming/pgdata
-pgbcheck: /usr/bin/pgrep pgbouncer
+pgrestart: pg_ctl restart -D /data/devdb_10/data
 pgbrestart: pgbouncer -R -d /etc/pgbouncer/pgbouncer.ini
 
