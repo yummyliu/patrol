@@ -80,11 +80,11 @@ func main() {
 
 	db, err := sql.Open("postgres", c.ConnStr)
 	if err != nil {
-		  panic(err)
+		  log.Error(err)
 	}
 	err = db.Ping()
 	if err != nil {
-		  panic(err)
+		  log.Error(err)
 	}
 	defer db.Close()
 
@@ -108,30 +108,18 @@ func main() {
 				}
 				break;
 			case "pg_restart":
-				command := exec.Command(c.PgRestart)
-				err := command.Start()
+				command := exec.Command("/bin/sh", "-c", c.PgRestart)
+				err := command.Run()
 				if nil != err {
-					log.Error(err)
+					log.Warningf("PostgerSQL restart error: %s", err);
 				}
-				log.Infof("Process PID:", command.Process.Pid)
-				err = command.Wait()
-				if nil != err {
-					log.Error(err)
-				}
-				log.Infof("ProcessState PID:", command.ProcessState.Pid())
 				break;
 			case "pgb_restart":
-				command := exec.Command(c.PgbRestart)
-				err := command.Start()
+				command := exec.Command("/bin/sh", "-c", c.PgbRestart)
+				err := command.Run()
 				if nil != err {
-					log.Error(err)
+					log.Warningf("Pgbouncer restart error: %v >> %s", command.Args, err);
 				}
-				log.Infof("Process PID:", command.Process.Pid)
-				err = command.Wait()
-				if nil != err {
-					log.Error(err)
-				}
-				log.Infof("ProcessState PID:", command.ProcessState.Pid())
 				break;
 			}
 		}

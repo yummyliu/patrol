@@ -104,7 +104,7 @@ func CpuChecker(ops_ch chan<- OpsMessage) {
 					log.Warningf("CUR_CPUUSAGE: %f; AVG_CPUUSAGE: %f\n", curcpuUsage, avgLoad)
 					ops_ch <- OpsMessage{OpsType: "killquery", metric: avgLoad}
 				} else {
-					log.Debugf("CUR_CPUUSAGE: %f; AVG_CPUUSAGE: %f\n", curcpuUsage, avgLoad)
+//					log.Debugf("CUR_CPUUSAGE: %f; AVG_CPUUSAGE: %f\n", curcpuUsage, avgLoad)
 				}
 			}
 		}
@@ -130,7 +130,8 @@ func ActivityChecker(ops_ch chan<- OpsMessage, db *sql.DB) {
 
 		rows, err := db.Query("select state,count(*) from pg_stat_activity group by state having state != '';")
 		if err != nil {
-			log.Fatal(err)
+			log.Error(err)
+			continue
 		}
 		defer rows.Close()
 
@@ -175,8 +176,7 @@ func ActivityChecker(ops_ch chan<- OpsMessage, db *sql.DB) {
 				break;
 			}
 		}
-		log.Infof("ACTIVITY: active->%d; idleInTransaction->%d:%d\n", curActiveCount,
-		curidleInTranCount, idleInTranCounts)
+//		log.Debugf("ACTIVITY: active->%d; idleInTransaction->%d:%d\n", curActiveCount,curidleInTranCount, idleInTranCounts)
 	}
 }
 
@@ -184,8 +184,8 @@ func CheckPGalive(ops_ch chan<- OpsMessage) {
 	log.Info("PGaliveChecker on work...")
 	for  {
 		time.Sleep(5 * time.Second)
-
-		command := exec.Command("pg_ctl", "status", "-D",c.PgData)
+		tempstr := "sudo -u postgres /usr/pgsql/bin/pg_ctl status -D " + c.PgData
+		command := exec.Command("/bin/bash", "-c", tempstr)
 		err := command.Run()
 		if nil != err {
 			ops_ch <- OpsMessage{OpsType: "pg_restart", metric: float64(-1)}
