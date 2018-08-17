@@ -47,7 +47,7 @@ func initFlag() {
 
 func initlog() {
 	var format = logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.000}%{shortfile} » %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+		`%{color}%{time:15:04:05.000}|%{level:.4s}%{id:03x}%{color:reset}» %{shortfile} %{message}`,
 	)
 	backend1 := logging.NewLogBackend(os.Stderr, "", 0)
 	backend2 := logging.NewLogBackend(os.Stderr, "", 0)
@@ -76,7 +76,7 @@ func main() {
 	initlog()
 	initFlag()
 	loadconf()
-	log.Info(c.ConnStr, c.KillQuerySQL, c.PgbRestart, c.PgData, c.PgRestart)
+	log.Infof("%v",c)
 
 	db, err := sql.Open("postgres", c.ConnStr)
 	if err != nil {
@@ -105,6 +105,8 @@ func main() {
 				if err == nil {
 					rows,_ := res.RowsAffected()
 					log.Infof("metric: %f, kill %d querys\n",msg.metric, rows)
+				} else {
+					log.Error(err)
 				}
 				break;
 			case "pg_restart":
@@ -113,6 +115,7 @@ func main() {
 				if nil != err {
 					log.Warningf("PostgerSQL restart error: %s", err);
 				}
+				log.Infof("PostgerSQL restart: %v", command.Args);
 				break;
 			case "pgb_restart":
 				command := exec.Command("/bin/sh", "-c", c.PgbRestart)
@@ -120,6 +123,7 @@ func main() {
 				if nil != err {
 					log.Warningf("Pgbouncer restart error: %v >> %s", command.Args, err);
 				}
+				log.Infof("Pgbouncer restart: %v", command.Args);
 				break;
 			}
 		}
