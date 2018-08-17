@@ -88,13 +88,13 @@ func main() {
 	}
 	defer db.Close()
 
+	go HttpServer()
+
     ops_ch := make(chan OpsMessage, 100)
-//	go CpuChecker(ops_ch)
-//	go ActivityChecker(ops_ch)
+	go CpuChecker(ops_ch)
+	go ActivityChecker(ops_ch)
 	go CheckPGalive(ops_ch)
 	go CheckPGBalive(ops_ch)
-
-	go HttpServer()
 
 	for  {
 		select {
