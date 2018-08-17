@@ -111,19 +111,16 @@ func CpuChecker(ops_ch chan<- OpsMessage) {
 	}
 }
 
-func ActivityChecker(ops_ch chan<- OpsMessage) {
+func ActivityChecker(ops_ch chan<- OpsMessage, db *sql.DB) {
 	log.Info("ActivityChecker on work...")
 
-	db, err := sql.Open("postgres", c.ConnStr)
-	if err != nil {
-		  panic(err)
+	err := db.Ping()
+	for err != nil {
+		log.Warningf("Connect to DB error: %s", err)
+		time.Sleep(10 * time.Second)
+		err = db.Ping()
+		continue
 	}
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		  panic(err)
-	}
-
 	var (
 		activeCounts int = 0
 		idleInTranCounts int = 0
@@ -184,6 +181,7 @@ func ActivityChecker(ops_ch chan<- OpsMessage) {
 }
 
 func CheckPGalive(ops_ch chan<- OpsMessage) {
+	log.Info("PGaliveChecker on work...")
 	for  {
 		time.Sleep(5 * time.Second)
 
@@ -197,6 +195,7 @@ func CheckPGalive(ops_ch chan<- OpsMessage) {
 }
 
 func CheckPGBalive(ops_ch chan<- OpsMessage) {
+	log.Info("PGBaliveChecker on work...")
 	for  {
 		time.Sleep(5 * time.Second)
 

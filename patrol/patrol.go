@@ -92,7 +92,7 @@ func main() {
 
     ops_ch := make(chan OpsMessage, 100)
 	go CpuChecker(ops_ch)
-	go ActivityChecker(ops_ch)
+	go ActivityChecker(ops_ch, db)
 	go CheckPGalive(ops_ch)
 	go CheckPGBalive(ops_ch)
 
