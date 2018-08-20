@@ -75,11 +75,12 @@ run:
     docker run -i -P postgres-commander
 
 # usage
-CREATE OR REPLACE FUNCTION rc_out (personal_number)
+CREATE OR REPLACE FUNCTION getjson()
     RETURNS cstring
-AS 'rc.so',
-'personal_number_out'
+AS 'commander.so',
+'getjson'
 LANGUAGE 'C';
+
 select
     getjson::json ->> 1
 from (
