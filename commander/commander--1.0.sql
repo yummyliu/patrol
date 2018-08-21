@@ -5,9 +5,11 @@
 
 CREATE SCHEMA patrol;
 create table patrol.dbinfo(id int, name text, pip text, pport int);
-insert into patrol.dbinfo values (1,'testdb','localhost',3000);
-CREATE OR REPLACE FUNCTION getdbinfo(int)
-    RETURNS cstring
+insert into patrol.dbinfo values (0,'testdb','localhost',3000);
+
+
+CREATE OR REPLACE FUNCTION getdbinfo(int,cstring)
+RETURNS cstring
 AS 'commander.so',
 'getdbinfo'
 LANGUAGE C;

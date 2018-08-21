@@ -82,7 +82,5 @@ AS 'commander.so',
 LANGUAGE 'C';
 
 select
-    getjson::json ->> 1
-from (
-    select
-        getjson ()::text) as a;
+    getdbinfo::json ->> 1
+from ( select getdbinfo(1,'top2diskspace')::text) as a;

@@ -1,41 +1,81 @@
 {
 	"dbinfo": {
-		"Top2diskSpace": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		"age": 23879233,
+		"diskusage": 0.48
+	},
+	"dbtop": {
+		"top3bigindex": [
+			{ "id": 1, "schemaname": "sche1", "indexname": "idx1", "size": 19234 },
+			{ "id": 2, "schemaname": "sche2", "indexname": "idx2", "size": 1239082 },
+			{ "id": 3, "schemaname": "sche3", "indexname": "idx3", "size": 1239082 }
 		],
-		"Top5Func": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		"top3bigtable": [
+			{ "id": 1, "schemaname": "sche1", "tablename": "table1", "size": 19234 },
+			{ "id": 2, "schemaname": "sche2", "tablename": "table2", "size": 129082 },
+			{ "id": 3, "schemaname": "sche3", "tablename": "table3", "size": 123982 }
 		],
-		"Top3Query": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-		],
-		"Top3AgeTable": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-		],
-		"Top3InsertTable": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-		],
-		"Top3UpdateTable": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-		],
-		"Top3SeqScanTable": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-		],
-		"Top3Sequence": [
-			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		"top3agetable": [
+			{ "id": 1, "schemaname": "sche1", "tablename": "table1", "age": 19234 },
+			{ "id": 2, "schemaname": "sche2", "tablename": "table2", "age": 129082 },
+			{ "id": 3, "schemaname": "sche3", "tablename": "table3", "age": 123982 }
 		]
 	},
-	"osinfo": {
-		"CpuUsage": 0.8,
-		"DiskUsage": 0.48
+	"funcsnap": {
+		"funcstat": [
+			{ "funcid": 1, "schemaname": "sch1", "funcname": "", "calls": 19234 , "total_time": 2342311, "self_time": 12312.3},
+			{ "funcid": 2, "schemaname": "sch2", "funcname": "", "calls": 19234 , "total_time": 2342311, "self_time": 12382.3}
+		]
+	},
+	"tablesnap": {
+		"tablestat": [
+			{
+				"relid"               : 1302582,
+				"schemaname"         : "statsrepo",
+				"relname"             : "cpu",
+				"seq_scan"            : 2,
+				"seq_tup_read"        : 9,
+				"idx_scan"            : 117877,
+				"idx_tup_fetch"       : 117877,
+				"n_tup_ins"           : 118978,
+				"n_tup_upd"           : 0,
+				"n_tup_del"           : 117877,
+				"n_tup_hot_upd"       : 0,
+				"n_live_tup"       : 8319,
+				"n_dead_tup"          : 47021,
+				"n_mod_since_analyze" : 4088,
+				"last_vacuum"         : null,
+				"last_autovacuum"     : "2018-08-21 15:26:22",
+				"last_analyze"        : null,
+				"last_autoanalyze"    : "2018-08-10 00:04:15.019698+08",
+				"vacuum_count"        : 0,
+				"autovacuum_count"    : 258027,
+				"analyze_count"       : 0,
+				"autoanalyze_count"   : 97
+			},
+			{
+				"relid"               : 1302582,
+				"schemaname"         : "statsrepo",
+				"relname"             : "cpu",
+				"seq_scan"            : 2,
+				"seq_tup_read"        : 9,
+				"idx_scan"            : 117877,
+				"idx_tup_fetch"       : 117877,
+				"n_tup_ins"           : 118978,
+				"n_tup_upd"           : 0,
+				"n_tup_del"           : 117877,
+				"n_tup_hot_upd"       : 0,
+				"n_live_tup"       : 8319,
+				"n_dead_tup"          : 47021,
+				"n_mod_since_analyze" : 4088,
+				"last_vacuum"         : null,
+				"last_autovacuum"     : "2018-08-21 15:26:22",
+				"last_analyze"        : null,
+				"last_autoanalyze"    : "2018-08-10 00:04:15.019698+08",
+				"vacuum_count"        : 0,
+				"autovacuum_count"    : 258027,
+				"analyze_count"       : 0,
+				"autoanalyze_count"   : 97
+			}
+		]
 	}
 }
