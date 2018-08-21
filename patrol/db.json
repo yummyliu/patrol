@@ -1,35 +1,41 @@
 {
-	"Top2diskSpace": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	],
-	"Top5Func": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	],
-	"Top3Query": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	],
-	"Top3AgeTable": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	],
-	"Top3InsertTable": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	],
-	"Top3UpdateTable": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	],
-	"Top3SeqScanTable": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	],
-	"Top3Sequence": [
-		{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
-		{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
-	]
+	"dbinfo": {
+		"Top2diskSpace": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		],
+		"Top5Func": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		],
+		"Top3Query": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		],
+		"Top3AgeTable": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		],
+		"Top3InsertTable": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		],
+		"Top3UpdateTable": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		],
+		"Top3SeqScanTable": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		],
+		"Top3Sequence": [
+			{ "id": 1, "name": "/export", "usage": 19234 , "total": 2342311},
+			{ "id": 2, "name": "/var/backup", "usage": 1239082, "total": 231234}
+		]
+	},
+	"osinfo": {
+		"CpuUsage": 0.8,
+		"DiskUsage": 0.48
+	}
 }

@@ -180,3 +180,4 @@ Json::Value getJson(const std::string & strUrl, const std::string & key)
 
 	return 0;
 }
+

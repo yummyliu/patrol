@@ -5,4 +5,5 @@
 #include <json/reader.h>
 
 Json::Value getJson(const std::string & strUrl, const std::string & key);
+
 #endif
