@@ -105,7 +105,8 @@ extern "C" {
 			pfree(values);
 			pfree(nulls);
 			ReleaseTupleDesc(tupdesc);
-
+			/* TODO return HEAPTUPLE result
+			 */
 			PG_RETURN_HEAPTUPLEHEADER(result);
 
 		}catch(Json::LogicError e) {

@@ -52,5 +52,6 @@ string RequestJSONValueAsync(string url, string key)
 			ss << e.what();
 			}
 			}).wait();
+
 	return ss.str().c_str();
 }
