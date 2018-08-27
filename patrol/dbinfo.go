@@ -1,9 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -60,15 +62,77 @@ func (this *DiskUsage) Used() uint64 {
 func (this *DiskUsage) Usage() float32 {
 	return float32(this.Used()) / float32(this.Size())
 }
+func getDbAge(mdb *sql.DB) string {
+	msql := `SELECT age(relfrozenxid)
+	FROM pg_authid t1
+	JOIN pg_class t2 ON t1.oid=t2.relowner
+	JOIN pg_namespace t3 ON t2.relnamespace=t3.oid
+	WHERE t2.relkind IN ($$t$$,$$r$$)
+	ORDER BY age(relfrozenxid) DESC LIMIT 1;`
+
+	var age string
+	err := mdb.QueryRow(msql).Scan(&age)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error(err)
+	}
+
+	return age
+}
+
+func getDiskUsage(mdb *sql.DB) float32 {
+	msql := `show data_directory;`
+
+	var dataDir string
+	err := mdb.QueryRow(msql).Scan(&dataDir)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error(err)
+	}
+
+	du := NewDiskUsage(dataDir)
+	return du.Usage()
+}
 
 func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	ma,_ := strconv.ParseInt(getDbAge(), 10, 64)
+	mdb, err := sql.Open("postgres", c.ConnStr)
+	if err != nil {
+		  log.Error(err)
+	}
+	err = mdb.Ping()
+	if err != nil {
+		  log.Error(err)
+	}
+	defer mdb.Close()
 
+	msql := `SELECT datname
+	FROM pg_database
+	WHERE datname!='postgres'
+		AND datname != 'template1'
+	    AND datname != 'template0';`
+
+	var dbname string
+	err = mdb.QueryRow(msql).Scan(&dbname)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error(err)
+	}
+
+	log.Info(c.ConnStr)
+	strings.Replace(c.ConnStr, " dbname=postgres", "dbname="+dbname,-1);
+	ndb, err := sql.Open("postgres", c.ConnStr)
+	log.Info(c.ConnStr)
+	if err != nil {
+		  log.Error(err)
+	}
+	err = ndb.Ping()
+	if err != nil {
+		  log.Error(err)
+	}
+
+	ma,_ := strconv.ParseInt(getDbAge(ndb), 10, 64)
 	dbinfo := &DbInfo{
 		Maxage: ma,
-		DiskUsage : getDiskUsage(),
+		DiskUsage : getDiskUsage(ndb),
 	}
 
 	json, err := json.Marshal(dbinfo)
