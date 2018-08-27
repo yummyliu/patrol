@@ -3,7 +3,20 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"syscall"
 )
+
+type DiskUsage struct {
+		stat *syscall.Statfs_t
+}
+
+func NewDiskUsage(volumePath string) *DiskUsage {
+
+	var stat syscall.Statfs_t
+	syscall.Statfs(volumePath, &stat)
+	return &DiskUsage{&stat}
+}
 
 type DbTable struct {
 	Tablename string
@@ -20,22 +33,42 @@ type DbFunc struct {
 }
 
 type DbInfo struct {
-	Dbname string
 	Maxage int64
-	TopThreeAge [3]DbTable
+	DiskUsage float32
+}
+// Total free bytes on file system
+func (this *DiskUsage) Free() uint64 {
+	return this.stat.Bfree * uint64(this.stat.Bsize)
+}
+
+// Total available bytes on file system to an unpriveleged user
+func (this *DiskUsage) Available() uint64 {
+	return this.stat.Bavail * uint64(this.stat.Bsize)
+}
+
+// Total size of the file system
+func (this *DiskUsage) Size() uint64 {
+	return this.stat.Blocks * uint64(this.stat.Bsize)
+}
+
+// Total bytes used in file system
+func (this *DiskUsage) Used() uint64 {
+	return this.Size() - this.Free()
+}
+
+// Percentage of use on the file system
+func (this *DiskUsage) Usage() float32 {
+	return float32(this.Used()) / float32(this.Size())
 }
 
 func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	ma,_ := strconv.ParseInt(getDbAge(), 10, 64)
+
 	dbinfo := &DbInfo{
-		Dbname: "postgres",
-		Maxage: 1000000023,
-		TopThreeAge: [3]DbTable{
-			{Tablename: "t1", Schemaname: "s1"},
-			{Tablename: "t2", Schemaname: "s2"},
-			{Tablename: "t3", Schemaname: "s3"},
-		},
+		Maxage: ma,
+		DiskUsage : getDiskUsage(),
 	}
 
 	json, err := json.Marshal(dbinfo)
@@ -56,3 +89,4 @@ func HttpServer() {
 	log.Info("http service on (8888)...")
 	server.ListenAndServe()
 }
+

@@ -70,7 +70,57 @@ func loadconf() {
 		log.Fatalf("Unmarshal: %v", err)
 	}
 }
+func getDbAge() string {
 
+	mdb, err := sql.Open("postgres", c.ConnStr)
+	if err != nil {
+		  log.Error(err)
+	}
+	err = mdb.Ping()
+	if err != nil {
+		  log.Error(err)
+	}
+	defer mdb.Close()
+
+	msql := `SELECT age(relfrozenxid)
+	FROM pg_authid t1
+	JOIN pg_class t2 ON t1.oid=t2.relowner
+	JOIN pg_namespace t3 ON t2.relnamespace=t3.oid
+	WHERE t2.relkind IN ($$t$$,$$r$$)
+	ORDER BY age(relfrozenxid) DESC LIMIT 1;`
+
+	var age string
+	err = mdb.QueryRow(msql).Scan(&age)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error(err)
+	}
+
+	return age
+}
+
+func getDiskUsage() float32 {
+
+	mdb, err := sql.Open("postgres", c.ConnStr)
+	if err != nil {
+		  log.Error(err)
+	}
+	err = mdb.Ping()
+	if err != nil {
+		  log.Error(err)
+	}
+	defer mdb.Close()
+
+	msql := `show data_directory;`
+
+	var dataDir string
+	err = mdb.QueryRow(msql).Scan(&dataDir)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error(err)
+	}
+
+	du := NewDiskUsage(dataDir);
+	return du.Usage();
+}
 func main() {
 
 	initlog()
@@ -88,13 +138,14 @@ func main() {
 	}
 	defer db.Close()
 
+	log.Infof("%s , %f", getDbAge(), getDiskUsage());
 	go HttpServer()
 
     ops_ch := make(chan OpsMessage, 100)
-	go CpuChecker(ops_ch)
-	go ActivityChecker(ops_ch, db)
-	go CheckPGalive(ops_ch)
-	go CheckPGBalive(ops_ch)
+	//go CpuChecker(ops_ch)
+	//go ActivityChecker(ops_ch, db)
+	//go CheckPGalive(ops_ch)
+	//go CheckPGBalive(ops_ch)
 
 	for  {
 		select {

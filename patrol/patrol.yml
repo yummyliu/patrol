@@ -1,4 +1,4 @@
-connstr: dbname=postgres user=postgres password=123 sslmode=disable
+connstr: dbname=postgres user=liuyangming password=123 sslmode=disable
 pgdata:  /data/devdb_10/data
 killquery: select pg_terminate_backend(pid) from pg_stat_activity where pid <> pg_backend_pid() and usename != 'dba';
 pgrestart: sudo -u postgres /usr/pgsql/bin/pg_ctl restart -D /data/devdb_10/data
