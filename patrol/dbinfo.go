@@ -4,44 +4,35 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"os"
-	"strconv"
+	_ "os"
+	_ "strconv"
 	"strings"
 	"syscall"
 )
 
-type DiskUsage struct {
-		stat *syscall.Statfs_t
+type DbInfo struct {
+	Maxage uint64
+	DiskUsage float32
 }
 
-func NewDiskUsage(volumePath string) *DiskUsage {
+func HandleError(err error) {
+	if err !=nil {
+		log.Error(err)
+	}
+}
+
+func diskUsage(volumePath string) float32 {
 
 	var stat syscall.Statfs_t
 	syscall.Statfs(volumePath, &stat)
-	return &DiskUsage{&stat}
+
+	msize := stat.Blocks * uint64(stat.Bsize)
+	mfree := stat.Bfree * uint64(stat.Bsize)
+
+	return float32(msize - mfree) / float32(msize)
 }
 
-type DbInfo struct {
-	Maxage int64
-	DiskUsage float32
-}
-func (this *DiskUsage) Free() uint64 {
-	return this.stat.Bfree * uint64(this.stat.Bsize)
-}
-
-func (this *DiskUsage) Size() uint64 {
-	return this.stat.Blocks * uint64(this.stat.Bsize)
-}
-
-func (this *DiskUsage) Used() uint64 {
-	return this.Size() - this.Free()
-}
-
-func (this *DiskUsage) Usage() float32 {
-	return float32(this.Used()) / float32(this.Size())
-}
-
-func getDbAge(mdb *sql.DB) string {
+func getDbAge(mdb *sql.DB) uint64 {
 	msql := `SELECT age(relfrozenxid)
 	FROM pg_authid t1
 	JOIN pg_class t2 ON t1.oid=t2.relowner
@@ -49,7 +40,7 @@ func getDbAge(mdb *sql.DB) string {
 	WHERE t2.relkind IN ($$t$$,$$r$$)
 	ORDER BY age(relfrozenxid) DESC LIMIT 1;`
 
-	var age string
+	var age uint64
 	err := mdb.QueryRow(msql).Scan(&age)
 	if err != nil && err != sql.ErrNoRows {
 		log.Error(err)
@@ -58,7 +49,7 @@ func getDbAge(mdb *sql.DB) string {
 	return age
 }
 
-func getDiskUsage(mdb *sql.DB) float32 {
+func getDbDiskUsage(mdb *sql.DB) float32 {
 	msql := `show data_directory;`
 
 	var dataDir string
@@ -67,27 +58,16 @@ func getDiskUsage(mdb *sql.DB) float32 {
 		log.Error(err)
 	}
 
-	log.Info(dataDir)
-	realdir,err := os.Readlink(dataDir)
-	if err !=nil {
-		log.Error(err)
-	}
-	log.Info(realdir)
-	du := NewDiskUsage(realdir)
-	return du.Usage()
+	return diskUsage(dataDir)
 }
 
 func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	mdb, err := sql.Open("postgres", c.ConnStr)
-	if err != nil {
-		  log.Error(err)
-	}
+	HandleError(err)
 	err = mdb.Ping()
-	if err != nil {
-		  log.Error(err)
-	}
+	HandleError(err)
 	defer mdb.Close()
 
 	msql := `SELECT datname
@@ -95,7 +75,6 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	WHERE datname!='postgres'
 		AND datname != 'template1'
 	    AND datname != 'template0';`
-
 	var dbname string
 	err = mdb.QueryRow(msql).Scan(&dbname)
 	if err != nil && err != sql.ErrNoRows {
@@ -105,16 +84,12 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	newconn := strings.Replace(c.ConnStr, "dbname=postgres", "dbname="+dbname,-1);
 	log.Info(newconn)
 	ndb, err := sql.Open("postgres", newconn)
-	if err != nil {
-		  log.Error(err)
-	}
+	HandleError(err)
 	err = ndb.Ping()
-	if err != nil {
-		  log.Error(err)
-	}
+	HandleError(err)
 
-	ma,_ := strconv.ParseInt(getDbAge(ndb), 10, 64)
-	du := getDiskUsage(ndb)
+	ma := getDbAge(ndb)
+	du := getDbDiskUsage(ndb)
 	log.Infof("%d:%f", ma,du)
 	dbinfo := &DbInfo{
 		Maxage: ma,
@@ -122,21 +97,17 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json, err := json.Marshal(dbinfo)
-	if err != nil {
-		log.Error(err)
-	}
-
+	HandleError(err)
 	w.Write(json)
 }
 
 func HttpServer() {
-
 	server := http.Server{
-		Addr: "0.0.0.0:8888",
+		Addr: "0.0.0.0:9999",
 	}
 	http.HandleFunc("/dbinfo", getDbInfo)
 
-	log.Info("http service on (8888)...")
+	log.Info("patrol service on (9999)...")
 	server.ListenAndServe()
 }
 
