@@ -25,25 +25,22 @@ type DbInfo struct {
 	Maxage int64
 	DiskUsage float32
 }
-// Total free bytes on file system
 func (this *DiskUsage) Free() uint64 {
 	return this.stat.Bfree * uint64(this.stat.Bsize)
 }
 
-// Total size of the file system
 func (this *DiskUsage) Size() uint64 {
 	return this.stat.Blocks * uint64(this.stat.Bsize)
 }
 
-// Total bytes used in file system
 func (this *DiskUsage) Used() uint64 {
 	return this.Size() - this.Free()
 }
 
-// Percentage of use on the file system
 func (this *DiskUsage) Usage() float32 {
 	return float32(this.Used()) / float32(this.Size())
 }
+
 func getDbAge(mdb *sql.DB) string {
 	msql := `SELECT age(relfrozenxid)
 	FROM pg_authid t1
@@ -71,7 +68,10 @@ func getDiskUsage(mdb *sql.DB) float32 {
 	}
 
 	log.Info(dataDir)
-	realdir,_ := os.Readlink(dataDir)
+	realdir,err := os.Readlink(dataDir)
+	if err !=nil {
+		log.Error(err)
+	}
 	log.Info(realdir)
 	du := NewDiskUsage(realdir)
 	return du.Usage()
