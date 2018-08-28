@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"syscall"
@@ -20,20 +21,6 @@ func NewDiskUsage(volumePath string) *DiskUsage {
 	return &DiskUsage{&stat}
 }
 
-type DbTable struct {
-	Tablename string
-	Schemaname string
-	Seqscan int64
-	Indexscan int64
-}
-
-type DbFunc struct {
-	Funcname string
-	Schemaname string
-	Total_call int64
-	Total_time int64
-}
-
 type DbInfo struct {
 	Maxage int64
 	DiskUsage float32
@@ -41,11 +28,6 @@ type DbInfo struct {
 // Total free bytes on file system
 func (this *DiskUsage) Free() uint64 {
 	return this.stat.Bfree * uint64(this.stat.Bsize)
-}
-
-// Total available bytes on file system to an unpriveleged user
-func (this *DiskUsage) Available() uint64 {
-	return this.stat.Bavail * uint64(this.stat.Bsize)
 }
 
 // Total size of the file system
@@ -88,7 +70,10 @@ func getDiskUsage(mdb *sql.DB) float32 {
 		log.Error(err)
 	}
 
-	du := NewDiskUsage(dataDir)
+	log.Info(dataDir)
+	realdir,_ := os.Readlink(dataDir)
+	log.Info(realdir)
+	du := NewDiskUsage(realdir)
 	return du.Usage()
 }
 
@@ -117,10 +102,9 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 	}
 
-	log.Info(c.ConnStr)
-	strings.Replace(c.ConnStr, " dbname=postgres", "dbname="+dbname,-1);
-	ndb, err := sql.Open("postgres", c.ConnStr)
-	log.Info(c.ConnStr)
+	newconn := strings.Replace(c.ConnStr, "dbname=postgres", "dbname="+dbname,-1);
+	log.Info(newconn)
+	ndb, err := sql.Open("postgres", newconn)
 	if err != nil {
 		  log.Error(err)
 	}
@@ -130,14 +114,16 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ma,_ := strconv.ParseInt(getDbAge(ndb), 10, 64)
+	du := getDiskUsage(ndb)
+	log.Infof("%d:%f", ma,du)
 	dbinfo := &DbInfo{
 		Maxage: ma,
-		DiskUsage : getDiskUsage(ndb),
+		DiskUsage : du,
 	}
 
 	json, err := json.Marshal(dbinfo)
 	if err != nil {
-		panic(err)
+		log.Error(err)
 	}
 
 	w.Write(json)
@@ -146,7 +132,7 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 func HttpServer() {
 
 	server := http.Server{
-		Addr: "127.0.0.1:8888",
+		Addr: "0.0.0.0:8888",
 	}
 	http.HandleFunc("/dbinfo", getDbInfo)
 
