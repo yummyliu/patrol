@@ -87,6 +87,7 @@ func getDbInfo(w http.ResponseWriter, r *http.Request) {
 	HandleError(err)
 	err = ndb.Ping()
 	HandleError(err)
+	defer ndb.Close()
 
 	ma := getDbAge(ndb)
 	du := getDbDiskUsage(ndb)
