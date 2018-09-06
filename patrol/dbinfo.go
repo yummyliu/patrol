@@ -33,12 +33,13 @@ func diskUsage(volumePath string) float32 {
 }
 
 func getDbAge(mdb *sql.DB) uint64 {
-	msql := `SELECT age(relfrozenxid)
-	FROM pg_authid t1
-	JOIN pg_class t2 ON t1.oid=t2.relowner
-	JOIN pg_namespace t3 ON t2.relnamespace=t3.oid
-	WHERE t2.relkind IN ($$t$$,$$r$$)
-	ORDER BY age(relfrozenxid) DESC LIMIT 1;`
+	msql := `SELECT age(datfrozenxid)
+				FROM pg_database
+				WHERE datname <> 'template1'
+				 	AND datname <> 'template0'
+				 	AND datname <> 'postgres'
+				  	AND datname <> 'monitordb'
+				ORDER BY age(datfrozenxid) DESC LIMIT 1;`
 
 	var age uint64
 	err := mdb.QueryRow(msql).Scan(&age)
