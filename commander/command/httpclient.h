@@ -4,6 +4,7 @@
 #include <json/json.h>
 #include <json/reader.h>
 
-Json::Value getJson(const std::string & strUrl, const std::string & key);
+Json::Value getJson(const std::string & strUrl);
+Json::Value getJsonByKey(const std::string & strUrl, const std::string & key);
 
 #endif

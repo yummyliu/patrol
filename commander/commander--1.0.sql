@@ -5,7 +5,7 @@
 
 CREATE SCHEMA patrol;
 create table patrol.dbinfo(id int, name text, pip text, pport int);
-insert into patrol.dbinfo values (0,'testdb','localhost',3000);
+insert into patrol.dbinfo values (0,'testdb','127.0.0.1',3000);
 
 
 CREATE OR REPLACE FUNCTION getdbinfo(int,cstring)
