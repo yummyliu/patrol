@@ -6,11 +6,11 @@
 CREATE SCHEMA patrol;
 create table patrol.dbinfo(id int, name text, pip text, pport int);
 insert into patrol.dbinfo values (0,'testdb','127.0.0.1',3000);
+insert into patrol.dbinfo values (1,'testdb','127.0.0.1',3000);
 
 
 CREATE OR REPLACE FUNCTION getdbinfo(int,cstring)
-RETURNS cstring
+RETURNS TABLE (maxage bigint, diskusage float)
 AS 'commander.so',
 'getdbinfo'
 LANGUAGE C;
-
