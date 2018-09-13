@@ -21,5 +21,6 @@
 #include "utils/builtins.h"
 #include "utils/snapmgr.h"
 #include "tcop/utility.h"
+#include "catalog/namespace.h"
 
 #endif /* ifndef COMMAND_H */

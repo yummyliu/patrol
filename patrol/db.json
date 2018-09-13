@@ -1,7 +1,7 @@
 {
 	"dbinfo": {
-		"age": 23879233,
-		"diskusage": 0.48,
+		"Maxage": 23879233,
+		"DiskUsage": 0.48,
 		"walsize-GB": 145
 	},
 	"dbtop": {

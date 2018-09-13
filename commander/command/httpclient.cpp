@@ -168,7 +168,20 @@ void CHttpClient::SetDebug(bool bDebug)
 }
 
 
-Json::Value getJson(const std::string & strUrl, const std::string & key)
+Json::Value getJson(const std::string & strUrl)
+{
+	CHttpClient client;
+
+	Json::Value jsonresp;
+	auto status = client.GetJson(strUrl, jsonresp);
+	if (status == CURLE_OK) {
+		return jsonresp;
+	}
+
+	return 0;
+}
+
+Json::Value getJsonByKey(const std::string & strUrl, const std::string & key)
 {
 	CHttpClient client;
 
@@ -180,4 +193,3 @@ Json::Value getJson(const std::string & strUrl, const std::string & key)
 
 	return 0;
 }
-
