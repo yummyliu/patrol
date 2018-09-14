@@ -18,11 +18,11 @@ extern "C" {
 PG_MODULE_MAGIC;
 #endif
 
-PG_FUNCTION_INFO_V1(getdbtop);
 PG_FUNCTION_INFO_V1(getdbinfo);
-PG_FUNCTION_INFO_V1(launchfuncsnap);
-PG_FUNCTION_INFO_V1(launchtablesnap);
-PG_FUNCTION_INFO_V1(retcomposite);
+//PG_FUNCTION_INFO_V1(getdbtop);
+//PG_FUNCTION_INFO_V1(launchfuncsnap);
+//PG_FUNCTION_INFO_V1(launchtablesnap);
+//PG_FUNCTION_INFO_V1(retcomposite);
 }
 
 #include <string>
@@ -33,16 +33,18 @@ PG_FUNCTION_INFO_V1(retcomposite);
 
 using namespace std;
 
-string getPatrolUrl(int dbId) {
-	string command = "select pip, pport from patrol.dbinfo where id = "+to_string(dbId);
+string getPatrolUrl(string dbId) {
+	string command = "select pip, pport from patrol.dbinfo where id = '"+dbId+"';";
 	string pip;
 	string pport;
 
 	int ret=0;
-	if ((ret = SPI_connect()) < 0)
-		elog(INFO, "SPI_connect returned %d", ret);
+	if ((ret = SPI_connect()) < 0) {
+		elog(ERROR, "SPI_connect returned %d", ret);
+	}
 
 	ret = SPI_exec(command.c_str(), 0);
+    elog(DEBUG1,"%s",command.c_str());
 	uint64 proc = SPI_processed;
 	if (ret > 0 && SPI_tuptable != NULL)
 	{
@@ -59,9 +61,7 @@ string getPatrolUrl(int dbId) {
 	}
 	SPI_finish();
 
-	string url = "http://"+pip+":"+pport;
-
-	return url;
+	return "http://"+pip+":"+pport;
 }
 
 extern "C" {
@@ -93,7 +93,7 @@ extern "C" {
 		/* get metric data from remote patrol
 		 * metric: dbinfo(default), db_top ...
 		 */
-		auto dbId = PG_GETARG_INT32(0);
+		auto dbId = PG_GETARG_CSTRING(0);
 		string metric = PG_GETARG_CSTRING(1);
 		string url = getPatrolUrl(dbId)+metric;
 
@@ -104,7 +104,7 @@ extern "C" {
 			ostringstream oss;
 			writer->write(avs,&oss);
 		}catch(Json::LogicError e) {
-			elog(ERROR, "msg1: %s", e.std::exception::what());
+			elog(ERROR, "msg0: %s %s", url.c_str(), e.std::exception::what());
 		}
 
 	    /* stuff done on every call of the function */
@@ -123,8 +123,12 @@ extern "C" {
 	        values[0] = (char *) palloc(64 * sizeof(char));
 	        values[1] = (char *) palloc(10 * sizeof(char));
 
-	        snprintf(values[0], 16, "%d", avs["Maxage"].asInt());
-	        snprintf(values[1], 16, "%f", avs["DiskUsage"].asFloat());
+		    try {
+	            snprintf(values[0], 16, "%d", avs["Maxage"].asInt());
+	            snprintf(values[1], 16, "%f", avs["DiskUsage"].asFloat());
+		    }catch(Json::LogicError e) {
+		    	elog(ERROR, "msg2: %s %s ", url.c_str(), e.std::exception::what());
+		    }
 
 	        tuple = BuildTupleFromCStrings(attinmeta, values);
 	        result = HeapTupleGetDatum(tuple);
@@ -140,72 +144,5 @@ extern "C" {
 	    {
 	        SRF_RETURN_DONE(funcctx);
 	    }
-	}
-
-	Datum getdbtop(PG_FUNCTION_ARGS) {
-		auto dbId = PG_GETARG_INT32(0);
-		string metric = PG_GETARG_CSTRING(1);
-
-		string url = getPatrolUrl(dbId)+"/dbtop";
-		Json::Value avs = getJson(url);
-		elog(INFO, "get json from url: %s", url.c_str());
-
-		try {
-			auto sb = Json::StreamWriterBuilder();
-			Json::StreamWriter* writer = sb.newStreamWriter();
-			ostringstream oss;
-			writer->write(avs,&oss);
-			elog(INFO, "msg: %s", oss.str().c_str());
-
-			PG_RETURN_CSTRING(pstrdup(oss.str().c_str()));
-		}catch(Json::LogicError e) {
-			PG_RETURN_CSTRING(e.what());
-		}
-	}
-
-	/* TODO
-	 */
-	Datum launchfuncsnap(PG_FUNCTION_ARGS) {
-		auto dbId = PG_GETARG_INT32(0);
-		string metric = PG_GETARG_CSTRING(1);
-
-		string url = getPatrolUrl(dbId)+"/dbtop";
-		Json::Value avs = getJson(url);
-		elog(INFO, "get json from url: %s", url.c_str());
-
-		try {
-			auto sb = Json::StreamWriterBuilder();
-			Json::StreamWriter* writer = sb.newStreamWriter();
-			ostringstream oss;
-			writer->write(avs,&oss);
-			elog(INFO, "msg: %s", oss.str().c_str());
-
-			PG_RETURN_CSTRING(pstrdup(oss.str().c_str()));
-		}catch(Json::LogicError e) {
-			PG_RETURN_CSTRING(e.what());
-		}
-	}
-
-	/* TODO
-	 */
-	Datum launchtablesnap(PG_FUNCTION_ARGS) {
-		auto dbId = PG_GETARG_INT32(0);
-		string metric = PG_GETARG_CSTRING(1);
-
-		string url = getPatrolUrl(dbId)+"/dbtop";
-		Json::Value avs = getJson(url);
-		elog(INFO, "get json from url: %s", url.c_str());
-
-		try {
-			auto sb = Json::StreamWriterBuilder();
-			Json::StreamWriter* writer = sb.newStreamWriter();
-			ostringstream oss;
-			writer->write(avs,&oss);
-			elog(INFO, "msg: %s", oss.str().c_str());
-
-			PG_RETURN_CSTRING(pstrdup(oss.str().c_str()));
-		}catch(Json::LogicError e) {
-			PG_RETURN_CSTRING(e.what());
-		}
 	}
 }
