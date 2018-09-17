@@ -27,9 +27,10 @@ func diskUsage(volumePath string) float32 {
 	syscall.Statfs(volumePath, &stat)
 
 	msize := stat.Blocks * uint64(stat.Bsize)
-	mfree := stat.Bfree * uint64(stat.Bsize)
+	// available = free - reserved filesystem blocks(for root)
+	mavail := stat.Bavail* uint64(stat.Bsize)
 
-	return float32(msize - mfree) / float32(msize)
+	return float32(msize - mavail) / float32(msize)
 }
 
 func getDbAge(mdb *sql.DB) uint64 {
