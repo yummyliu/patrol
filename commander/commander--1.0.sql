@@ -19,7 +19,7 @@ AS 'commander.so',
 LANGUAGE C;
 
 CREATE OR REPLACE FUNCTION patrol.getdbsinfo(cstring)
-RETURNS TABLE (maxage bigint, diskusage float)
+RETURNS TABLE (id text, maxage bigint, diskusage float)
 AS 'commander.so',
 'getdbsinfo'
 LANGUAGE C;

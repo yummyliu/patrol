@@ -25,6 +25,7 @@ PG_FUNCTION_INFO_V1(getdbsinfo);
 #include <string>
 #include <sstream>
 #include <strstream>
+#include <utility>
 
 #include "httpclient.h"
 
@@ -61,11 +62,12 @@ string getPatrolUrl(string dbId) {
 	return "http://"+pip+":"+pport;
 }
 
-vector<string> getPatrolUrls() {
-	vector<string> rets;
-	string command = "select pip, pport from patrol.dbinfo;";
+vector<pair<string,string>> getPatrolUrls() {
+	vector<pair<string,string>> rets;
+	string command = "select pip, pport, id from patrol.dbinfo;";
 	string pip;
 	string pport;
+	string id;
 
 	int ret=0;
 	if ((ret = SPI_connect()) < 0) {
@@ -86,7 +88,8 @@ vector<string> getPatrolUrls() {
 
 			pip = SPI_getvalue(tuple, tupdesc, 1);
 			pport = SPI_getvalue(tuple, tupdesc, 2);
-			rets.push_back("http://"+pip+":"+pport);
+			id = SPI_getvalue(tuple, tupdesc, 3);
+			rets.push_back(make_pair(id,"http://"+pip+":"+pport));
 	    }
 	}
 	SPI_finish();
@@ -186,7 +189,7 @@ extern "C" {
 	    TupleDesc            tupdesc;
 	    AttInMetadata       *attinmeta;
 
-		static vector<string> urls;
+		static vector<pair<string,string>> urls;
 	    if (SRF_IS_FIRSTCALL())
 	    {
 	        MemoryContext   oldcontext;
@@ -219,7 +222,7 @@ extern "C" {
 		elog(DEBUG1, "if %d %d", call_cntr, int(urls.size()));
 		if (call_cntr < max_calls) /* do when there is more left to send */
 	    {
-			auto url = urls[call_cntr];
+			auto url = urls[call_cntr].second;
 			elog(DEBUG1, "%s", url.c_str());
 			Json::Value avs = getJson(url+metric);
 			try {
@@ -234,13 +237,15 @@ extern "C" {
 	        HeapTuple    tuple;
 	        Datum        result;
 
-	        values = (char **) palloc(2 * sizeof(char *));
-	        values[0] = (char *) palloc(64 * sizeof(char));
-	        values[1] = (char *) palloc(10 * sizeof(char));
+	        values = (char **) palloc(3 * sizeof(char *));
+	        values[0] = (char *) palloc(10 * sizeof(char));
+	        values[1] = (char *) palloc(64 * sizeof(char));
+	        values[2] = (char *) palloc(10 * sizeof(char));
 
 		    try {
-	            snprintf(values[0], 16, "%d", avs["Maxage"].asInt());
-	            snprintf(values[1], 16, "%f", avs["DiskUsage"].asFloat());
+	            snprintf(values[0], 16, "%s", urls[call_cntr].first.c_str());
+	            snprintf(values[1], 16, "%d", avs["Maxage"].asInt());
+	            snprintf(values[2], 16, "%f", avs["DiskUsage"].asFloat());
 		    }catch(Json::LogicError e) {
 		    	elog(ERROR, "msg2: %s %s ", url.c_str(), e.std::exception::what());
 		    }
@@ -251,6 +256,7 @@ extern "C" {
 	        /* clean up (this is not really necessary) */
 	        pfree(values[0]);
 	        pfree(values[1]);
+	        pfree(values[2]);
 	        pfree(values);
 
 	        SRF_RETURN_NEXT(funcctx, result);
