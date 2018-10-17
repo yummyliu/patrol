@@ -15,6 +15,7 @@ import (
     "flag"
     _ "github.com/lib/pq"
 	"github.com/op/go-logging"
+    "github.com/sevlyar/go-daemon"
     "gopkg.in/yaml.v2"
     "io/ioutil"
     "os"
@@ -27,6 +28,7 @@ type Conf struct {
 	KillQuerySQL string `yaml:"killquery"`
 	PgRestart string `yaml:"pgrestart"`
 	PgbRestart string `yaml:"pgbrestart"`
+	PromRole string `yaml:"promrole"`
 }
 var configFile string
 var c Conf
@@ -74,10 +76,32 @@ func loadconf() {
 }
 
 func main() {
-
 	initlog()
 	initFlag()
 	loadconf()
+
+	cntxt := &daemon.Context{
+        PidFileName: "patrol.pid",
+        PidFilePerm: 0644,
+        LogFileName: "patrol.log",
+        LogFilePerm: 0640,
+        WorkDir:     "./",
+        Umask:       027,
+        Args:        []string{"[patrol-daemon]"},
+    }
+
+    d, err := cntxt.Reborn()
+    if err != nil {
+        log.Fatal("Unable to run: ", err)
+    }
+    if d != nil {
+        return
+    }
+    defer cntxt.Release()
+
+    log.Info("patrol-daemon started")
+    log.Info("- - - - - - - - - - - - - - -")
+
 
 	db, err := sql.Open("postgres", c.ConnStr)
 	if err != nil {
@@ -88,7 +112,6 @@ func main() {
 		  log.Error(err)
 	}
 	defer db.Close()
-
 
 	if launchChecker {
 		go HttpServer()
@@ -132,6 +155,7 @@ func main() {
 			}
 		}
 	} else {
+		go MetricCollector()
 		HttpServer()
 	}
 }

@@ -2,15 +2,14 @@
 #     FileName: commander.c
 #         Desc: commander bgw for patrol
 #       Author: LiuYangming
-#        Email: sdwhlym@126.com
+#        Email: sdwhlym@gmail.com
 #     HomePage: http://yummyliu.github.io
-#      Version: 0.0.1
+#      Version: 0.2.1
 #   LastChange: 2018-07-27 14:22:58
 #      History:
 ============================================================================= */
 #include "postgres.h"
 #include "command/command.h"
-#define TABLE_COUNT 1
 
 void		_PG_init(void);
 void		commander_main(Datum) pg_attribute_noreturn();

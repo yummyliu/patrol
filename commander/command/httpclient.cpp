@@ -31,8 +31,7 @@ class CHttpClient
 		bool m_bDebug;
 };
 
-CHttpClient::CHttpClient(void) :
-	m_bDebug(false)
+CHttpClient::CHttpClient(void) : m_bDebug(false)
 {
 
 }
@@ -41,7 +40,6 @@ CHttpClient::~CHttpClient(void)
 {
 
 }
-
 
 static int OnDebug(CURL *, curl_infotype itype, char * pData, size_t size, void *)
 {

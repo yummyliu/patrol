@@ -20,10 +20,6 @@ PG_MODULE_MAGIC;
 
 PG_FUNCTION_INFO_V1(getdbinfo);
 PG_FUNCTION_INFO_V1(getdbsinfo);
-//PG_FUNCTION_INFO_V1(getdbtop);
-//PG_FUNCTION_INFO_V1(launchfuncsnap);
-//PG_FUNCTION_INFO_V1(launchtablesnap);
-//PG_FUNCTION_INFO_V1(retcomposite);
 }
 
 #include <string>
@@ -100,6 +96,8 @@ vector<string> getPatrolUrls() {
 extern "C" {
 
 	Datum getdbinfo(PG_FUNCTION_ARGS) {
+		// TODO
+		// error_handle : like None, invalid host
 	    FuncCallContext     *funcctx;
 	    int                  call_cntr;
 	    int                  max_calls;
@@ -180,6 +178,8 @@ extern "C" {
 	}
 
 	Datum getdbsinfo(PG_FUNCTION_ARGS) {
+		// TODO
+		// error_handle : like None, invalid host
 	    FuncCallContext     *funcctx;
 	    int                  call_cntr;
 	    int                  max_calls;

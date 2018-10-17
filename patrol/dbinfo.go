@@ -3,11 +3,13 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	_ "os"
+	"os"
 	_ "strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 type DbInfo struct {
@@ -114,3 +116,66 @@ func HttpServer() {
 	server.ListenAndServe()
 }
 
+
+func MetricCollector() {
+//    replication_delay_sql := `select client_addr,
+//                                    CASE
+//                                    WHEN pg_is_in_recovery()
+//                                        THEN pg_wal_lsn_diff(pg_last_wal_replay_lsn(), replay_lsn)
+//                                    ELSE
+//                                        pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn)
+//                                    END AS total_lag
+//                              from monitor.v_repl_stats;`
+	replication_delay_sql := `select slave_ip as client_addr, total_lag from testt;`
+
+
+	HOSTNAME,_ := os.Hostname()
+
+	mdb, err := sql.Open("postgres", c.ConnStr)
+	HandleError(err)
+	err = mdb.Ping()
+	HandleError(err)
+
+	msql := `SELECT datname
+	FROM pg_database
+	WHERE datname!='postgres'
+		AND datname != 'template1'
+	    AND datname != 'template0';`
+	var dbname string
+	err = mdb.QueryRow(msql).Scan(&dbname)
+	if err != nil && err != sql.ErrNoRows {
+		log.Error(err)
+	}
+	mdb.Close()
+
+	for  {
+		time.Sleep(1 * time.Second)
+
+		newconn := strings.Replace(c.ConnStr, "dbname=postgres", "dbname="+dbname,-1);
+		log.Info(newconn)
+		ndb, err := sql.Open("postgres", newconn)
+		HandleError(err)
+		err = ndb.Ping()
+		HandleError(err)
+		defer ndb.Close()
+
+		rows, err := mdb.Query(replication_delay_sql)
+		if err != nil {
+		    log.Error(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+		    var slaveIp string
+			var replay_lag int64
+			rows.Scan(&slaveIp, &replay_lag)
+			fmt.Println(slaveIp, replay_lag)
+
+			reportServers := [2]string{"10.191.160.46","10.191.160.54"}
+			for _, rs := range reportServers {
+				url := fmt.Sprintf("http://%s:9091/metrics/job/pushgateway/instance/%s/datname/%s/slave/%s/role/%s",
+					rs, HOSTNAME, dbname, slaveIp, c.PromRole)
+				log.Info(url);
+			}
+		}
+	}
+}

@@ -1,0 +1,57 @@
+10:57:29.426|INFO001[0m» patrol.go:102 - - - - - - - - - - - - - - -
+10:57:29.426|INFO002[0m» patrol.go:103 daemon started
+10:57:29.441|INFO003[0m» dbinfo.go:115 patrol service on (9999)...
+10:58:51.679|INFO004[0m» dbinfo.go:89 user=liuyangming sslmode=disable dbname=putong-asdf
+10:58:51.695|INFO005[0m» dbinfo.go:98 66:0.720974
+11:05:14.238|INFO001[0m» patrol.go:102 patrol-daemon started
+11:05:14.238|INFO002[0m» patrol.go:103 - - - - - - - - - - - - - - -
+11:05:14.248|INFO003[0m» dbinfo.go:115 patrol service on (9999)...
+11:05:45.123|INFO001[0m» patrol.go:102 patrol-daemon started
+11:05:45.123|INFO002[0m» patrol.go:103 - - - - - - - - - - - - - - -
+11:05:45.132|INFO003[0m» dbinfo.go:115 patrol service on (9999)...
+11:06:47.157|INFO001[0m» patrol.go:102 patrol-daemon started
+11:06:47.157|INFO002[0m» patrol.go:103 - - - - - - - - - - - - - - -
+11:06:47.166|INFO003[0m» dbinfo.go:115 patrol service on (9999)...
+11:06:48.178|INFO004[0m» dbinfo.go:155 user=liuyangming sslmode=disable dbname=putong-asdf
+sql: database is closed
+[31m11:06:48.187|ERRO005[0m» dbinfo.go:164 sql: database is closed
+panic: runtime error: invalid memory address or nil pointer dereference
+	panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x10cf46b]
+
+goroutine 10 [running]:
+database/sql.(*Rows).close(0x0, 0x0, 0x0, 0x0, 0x0)
+	/usr/local/Cellar/go/1.10.3/libexec/src/database/sql/sql.go:2907 +0x6b
+database/sql.(*Rows).Close(0x0, 0x1, 0x0)
+	/usr/local/Cellar/go/1.10.3/libexec/src/database/sql/sql.go:2903 +0x33
+panic(0x130f4c0, 0x1533b20)
+	/usr/local/Cellar/go/1.10.3/libexec/src/runtime/panic.go:502 +0x229
+database/sql.(*Rows).Next(0x0, 0x138d138)
+	/usr/local/Cellar/go/1.10.3/libexec/src/database/sql/sql.go:2599 +0x30
+main.MetricCollector()
+	/Users/liuyangming/go/src/github.com/yummyliu/patrol/patrol/dbinfo.go:167 +0x50b
+created by main.main
+	/Users/liuyangming/go/src/github.com/yummyliu/patrol/patrol/patrol.go:158 +0xd56
+11:09:54.303|INFO001[0m» patrol.go:102 patrol-daemon started
+11:09:54.303|INFO002[0m» patrol.go:103 - - - - - - - - - - - - - - -
+11:09:54.312|INFO003[0m» dbinfo.go:115 patrol service on (9999)...
+11:09:55.321|INFO004[0m» dbinfo.go:155 user=liuyangming sslmode=disable dbname=putong-asdf
+sql: database is closed
+[31m11:09:55.330|ERRO005[0m» dbinfo.go:164 sql: database is closed
+panic: runtime error: invalid memory address or nil pointer dereference
+	panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x10cf46b]
+
+goroutine 10 [running]:
+database/sql.(*Rows).close(0x0, 0x0, 0x0, 0x0, 0x0)
+	/usr/local/Cellar/go/1.10.3/libexec/src/database/sql/sql.go:2907 +0x6b
+database/sql.(*Rows).Close(0x0, 0x1, 0x0)
+	/usr/local/Cellar/go/1.10.3/libexec/src/database/sql/sql.go:2903 +0x33
+panic(0x130f4c0, 0x1533b20)
+	/usr/local/Cellar/go/1.10.3/libexec/src/runtime/panic.go:502 +0x229
+database/sql.(*Rows).Next(0x0, 0x138d138)
+	/usr/local/Cellar/go/1.10.3/libexec/src/database/sql/sql.go:2599 +0x30
+main.MetricCollector()
+	/Users/liuyangming/go/src/github.com/yummyliu/patrol/patrol/dbinfo.go:167 +0x50b
+created by main.main
+	/Users/liuyangming/go/src/github.com/yummyliu/patrol/patrol/patrol.go:158 +0xd56
