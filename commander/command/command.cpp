@@ -10,10 +10,10 @@
 ============================================================================= */
 
 extern "C" {
-
 #include <postgres.h>
 #include <utils/rel.h>
 #include "command.h"
+
 #ifdef PG_MODULE_MAGIC
 PG_MODULE_MAGIC;
 #endif
